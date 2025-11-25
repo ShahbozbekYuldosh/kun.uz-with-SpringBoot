@@ -7,6 +7,7 @@ import dasturlash.uz.enums.ProfileStatus;
 import dasturlash.uz.exps.AppBadException;
 import dasturlash.uz.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

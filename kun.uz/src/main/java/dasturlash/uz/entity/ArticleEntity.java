@@ -1,6 +1,6 @@
 package dasturlash.uz.entity;
 
-import dasturlash.uz.enums.ArticleStatus;
+import dasturlash.uz.enums.ArticleStatusEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,10 +10,11 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
-@Setter
+
 @Entity
 @Table(name = "article")
+@Getter
+@Setter
 public class ArticleEntity {
 
     @Id
@@ -49,7 +50,7 @@ public class ArticleEntity {
     private ProfileEntity publisher;
 
     @Enumerated(EnumType.STRING)
-    private ArticleStatus status;
+    private ArticleStatusEnum status;
 
     @Column(name = "read_time")
     private Integer readTime; // maqolani o'qish vaqti daqiqa bilan
