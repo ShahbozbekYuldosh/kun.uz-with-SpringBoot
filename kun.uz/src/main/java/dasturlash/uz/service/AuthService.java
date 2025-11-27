@@ -20,7 +20,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final ProfileRepository profileRepository;
     private final ProfileRoleService profileRoleService;
-    private final SmsEmailService smsEmailService;
+    private final emailSendingService emailSendingService;
 
     public String register(RegistrationDTO dto) {
 
@@ -54,7 +54,7 @@ public class AuthService {
         profileRoleService.create(entity, ProfileRole.ROLE_USER);
 
         // 4. Tasdiqlash kodini yuborish kerak
-//        smsEmailService.sendVerificationCode(entity);
+        emailSendingService.sendRegistrationEmail(dto.getUsername(), entity.getId());
 
         return "Registration successful. Please verify your account.";
     }
