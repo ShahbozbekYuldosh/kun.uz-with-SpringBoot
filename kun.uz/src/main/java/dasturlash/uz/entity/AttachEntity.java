@@ -17,7 +17,7 @@ public class AttachEntity {
     @Id
     @GeneratedValue
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Integer id;
 
     @Column(name = "original_name", nullable = false)
     private String originalName; // Faylning original nomi

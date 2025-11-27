@@ -16,7 +16,7 @@ public class ArticleCategoryEntity {
     private Integer id;
 
     @Column(name = "article_id", insertable = false, updatable = false)
-    private UUID articleId;
+    private Integer articleId;
 
     @Column(name = "category_id", insertable = false, updatable = false)
     private Integer categoryId;

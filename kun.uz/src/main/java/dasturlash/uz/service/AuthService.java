@@ -1,5 +1,8 @@
 package dasturlash.uz.service;
 
+import dasturlash.uz.dto.AuthorizationDTO;
+import dasturlash.uz.dto.MessageDTO;
+import dasturlash.uz.dto.ProfileDTO;
 import dasturlash.uz.dto.RegistrationDTO;
 import dasturlash.uz.entity.ProfileEntity;
 import dasturlash.uz.enums.ProfileRole;
@@ -20,7 +23,12 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final ProfileRepository profileRepository;
     private final ProfileRoleService profileRoleService;
-    private final emailSendingService emailSendingService;
+    private final EmailSendingService emailSendingService;
+
+
+    private String generateOtp() {
+        return String.valueOf((int)(Math.random() * 900000) + 100000);
+    }
 
     public String register(RegistrationDTO dto) {
 
@@ -32,8 +40,10 @@ public class AuthService {
             ProfileEntity oldProfile = optional.get();
 
             // Agar eski profil aktiv emas va tasdiqlash jarayonida bo'lsa
-            if (oldProfile.getStatus().equals(ProfileStatus.REGISTRETION_PROGRESS)) {
-                profileRepository.delete(oldProfile); // eski ro'yxatdan o‘tish jarayonini tozalaymiz
+            if (oldProfile.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
+                profileRoleService.deleteRoles(oldProfile.getId());
+                profileRepository.delete(oldProfile);
+                // eski ro'yxatdan o‘tish jarayonini tozalaymiz
             } else {
                 throw new AppBadException("User already exists");
             }
@@ -54,9 +64,43 @@ public class AuthService {
         profileRoleService.create(entity, ProfileRole.ROLE_USER);
 
         // 4. Tasdiqlash kodini yuborish kerak
-        emailSendingService.sendRegistrationEmail(dto.getUsername(), entity.getId());
+        String otp = generateOtp();  // OTP yaratish funksiyasi
+        String verifyUrl = "https://your-app.com/verify?otp=" + otp;
+
+        MessageDTO emaildto = new MessageDTO();
+        emaildto.setToAccount(dto.getUsername());
+        emaildto.setSubject("Email Verification");
+        emaildto.setName(dto.getName());
+        emaildto.setOtp(otp);
+        emaildto.setVerifyUrl(verifyUrl);
+
+        emailSendingService.sendMimeMessage(emaildto);
 
         return "Registration successful. Please verify your account.";
+
     }
+
+    public ProfileDTO login(AuthorizationDTO dto) {
+        Optional<ProfileEntity> profileOptional = profileRepository.findByUsernameAndVisibleTrue(dto.getUsername());
+        if (profileOptional.isEmpty()) {
+            throw new AppBadException("Username or password wrong");
+        }
+        ProfileEntity entity = profileOptional.get();
+        if (!passwordEncoder.matches(dto.getPassword(), entity.getPassword())) {
+            throw new AppBadException("Username or password wrong");
+        }
+        if (!entity.getStatus().equals(ProfileStatus.ACTIVE)) {
+            throw new AppBadException("User in wrong status");
+        }
+        // status
+        ProfileDTO response = new ProfileDTO();
+        response.setId(entity.getId());
+        response.setName(entity.getName());
+        response.setUsername(entity.getUsername());
+        response.setRoleList(profileRoleService.getByProfileId(entity.getId()));
+        return response;
+    }
+
+
 }
 

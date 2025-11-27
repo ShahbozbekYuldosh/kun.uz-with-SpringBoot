@@ -21,7 +21,7 @@ public class ArticleLikeEntity {
     private Integer profileId;
 
     @Column(name = "article_id", insertable = false, updatable = false)
-    private UUID articleId;
+    private Integer articleId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_id")
