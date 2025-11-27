@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SmsEmailService {
 
-    private final EmailHistoryService emailHistoryService;
+/*    private final EmailHistoryService emailHistoryService;
     private final SmsHistoryService smsHistoryService;
 
     public void sendVerificationCode(ProfileEntity profile) {
@@ -20,6 +20,6 @@ public class SmsEmailService {
         } else {
             smsHistoryService.sendSms(profile.getUsername(), code);
         }
-    }
+    }*/
 }
 

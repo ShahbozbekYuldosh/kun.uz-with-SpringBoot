@@ -53,8 +53,8 @@ public class AuthService {
         // 3. Default Role qo‘shish
         profileRoleService.create(entity, ProfileRole.ROLE_USER);
 
-        // 4. Tasdiqlash kodini yuborish
-        smsEmailService.sendVerificationCode(entity);
+        // 4. Tasdiqlash kodini yuborish kerak
+//        smsEmailService.sendVerificationCode(entity);
 
         return "Registration successful. Please verify your account.";
     }
