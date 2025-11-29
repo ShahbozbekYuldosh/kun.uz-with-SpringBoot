@@ -1,12 +1,14 @@
 package dasturlash.uz.dto;
 
 import dasturlash.uz.enums.ProfileRole;
+import dasturlash.uz.enums.ProfileStatus;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-@Data
+import java.util.List;
+
 @Getter
 @Setter
 public class RegistrationDTO {
@@ -16,7 +18,9 @@ public class RegistrationDTO {
     private String username;
     @NotBlank(message = "password required")
     private String password;
-    private ProfileRole profileRole;
-
+    @NotNull(message = "Status majburiy")
+    private ProfileStatus profileStatus;
+    @NotNull(message = "Rol ro'yxati majburiy")
+    private List<ProfileRole> roleList;
 }
 

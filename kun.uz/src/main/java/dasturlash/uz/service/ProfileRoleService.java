@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +45,17 @@ public class ProfileRoleService {
         }
 
         return Optional.empty();
+    }
+
+    public @NotEmpty(message = "Role bo‘sh bo‘lmasligi kerak") List<ProfileRole> getProfileRoles(Integer id) {
+
+        List<ProfileRoleEntity> roleEntities = profileRoleRepository.findAllByProfileId(id);
+
+        List<ProfileRole> roles = roleEntities.stream()
+                .map(ProfileRoleEntity::getRole) // ProfileRoleEntity dagi getRole() metodini chaqirish
+                .collect(Collectors.toList());
+
+        return roles;
     }
 }
 
