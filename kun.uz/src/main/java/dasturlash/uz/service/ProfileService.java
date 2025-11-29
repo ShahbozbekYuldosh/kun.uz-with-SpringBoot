@@ -1,21 +1,21 @@
 package dasturlash.uz.service;
 
 import dasturlash.uz.dto.ProfileDTO;
-import dasturlash.uz.dto.RegistrationDTO; // RegistrationDTO ni import qilamiz
+import dasturlash.uz.dto.RegistrationDTO;
 import dasturlash.uz.entity.ProfileEntity;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.exps.AppBadException;
 import dasturlash.uz.repository.ProfileRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*; // Pagination uchun kerakli importlar
+import org.springframework.data.domain.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List; // List import
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors; // Collectors import
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,19 +24,9 @@ public class ProfileService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final ProfileRoleService profileRoleService;
 
-    // getById(Integer profileId) metodini o'zgartiramiz, chunki get(id) yordamchi metodi bor
-    // public ProfileEntity getById(Integer profileId){ // Bu metod nomi xato edi, get(id) bilan bir xil
-    //     return profileRepository.findByIdAndVisibleTrue(profileId).orElseThrow( () -> {
-    //         throw new AppBadException("Profile Not Found");
-    //     });
-    // }
-
-    // 1. Create Profile (ADMIN) - RegistrationDTO o'rniga ProfileCreateDTO ishlatilishi kerak.
-    // Dastlabki talab ProfileCreateDTO ni ko'rsatgan edi.
     public ProfileDTO create(@Valid RegistrationDTO dto, Integer adminId) {
 
-        // 1. Rollarni tekshirish: ADMIN faqat MODERATOR yoki PUBLISHER yaratishi mumkin
-        if (dto.getRoleList().contains(ProfileRole.ROLE_ADMIN)) { // dto.getRoleList() bo'lishi kerak
+        if (dto.getRoleList().contains(ProfileRole.ROLE_ADMIN)) {
             throw new AppBadException("Admin boshqa Admin yarata olmaydi.");
         }
 
@@ -54,7 +44,7 @@ public class ProfileService {
         // Parolni hash qilish
         entity.setPassword(passwordEncoder.encode(dto.getPassword()));
 
-        entity.setStatus(dto.getStatus()); // getProfileStatus o'rniga getStatus
+        entity.setStatus(dto.getProfileStatus());
         entity.setVisible(true);
         entity.setCreatedDate(LocalDateTime.now());
 
@@ -92,7 +82,6 @@ public class ProfileService {
 
         profileRepository.save(entity);
 
-        // Rollarni yangilash (Eski rollarni o'chirib, yangilarni kiritish)
         profileRoleService.deleteRoles(targetProfileId);
         dto.getRoleList().forEach(role -> profileRoleService.create(entity, role));
 
@@ -131,9 +120,8 @@ public class ProfileService {
             throw new AppBadException("Admin profilini o'chirishga ruxsat yo'q.");
         }
 
-        // Logik o'chirish (visible = false)
         profileRepository.updateVisible(id, false);
-        // AttachService.delete(entity.getPhotoId()); // Rasmni ham o'chirish kerak
+//         AttachService.delete(entity.getPhotoId()); // Rasmni ham o'chirish kerak
     }
 
     // ANY: 7. Update Photo (Image)
@@ -141,7 +129,6 @@ public class ProfileService {
         ProfileEntity entity = get(currentUserId);
         String oldAttachId = entity.getPhotoId();
 
-        // Yangi attachId ni o'rnatish
         profileRepository.updatePhotoId(currentUserId, attachId);
 
     }

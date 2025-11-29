@@ -3,7 +3,6 @@ package dasturlash.uz.controller;
 
 import dasturlash.uz.config.security.CustomUserDetails;
 import dasturlash.uz.dto.ProfileDTO;
-import dasturlash.uz.dto.ProfileUpdateDTO;
 import dasturlash.uz.dto.RegistrationDTO;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.service.ProfileService;
@@ -25,7 +24,7 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    // Yordamchi metod: Avtorizatsiyadan o'tgan foydalanuvchi ID sini olish
+    // Yordamchi metod: Avtorizatsiyadan o'tgan foydalanuvchi IDsini olish
     private Integer getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
