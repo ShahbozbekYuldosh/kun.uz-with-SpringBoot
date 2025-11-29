@@ -26,7 +26,7 @@ public class EmailSendingService {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>OTP Email</title>
+          <title>Email Verification</title>
 
           <style>
             body {
@@ -44,25 +44,21 @@ public class EmailSendingService {
               max-width: 600px;
               margin-left: auto;
               margin-right: auto;
-            }
-            .otp-code {
-              font-size: 24px;
-              font-weight: bold;
-              background-color: #f8f9fa;
-              padding: 15px;
-              text-align: center;
-              border-radius: 8px;
-              border: 1px dashed #007bff;
-              color: #007bff;
+              border: 2px solid black;
             }
             .btn-verify {
               display: inline-block;
-              padding: 10px 20px;
+              padding: 15px 40px;
               color: white !important;
               background-color: #007bff;
               border-radius: 6px;
               text-decoration: none;
               font-weight: bold;
+              font-size: 18px;
+              margin: 20px 0px;
+            }
+            .btn-verify:hover {
+              background-color: #0056b3;
             }
             .footer-text {
               color: #6c757d;
@@ -74,7 +70,7 @@ public class EmailSendingService {
               color: #007bff;
               text-decoration: none;
             }
-            .otp-lock {
+            .email-lock {
               color: #333;
               font-size: 80px;
             }
@@ -93,11 +89,22 @@ public class EmailSendingService {
               font-size: 30px;
               font-weight: 800;
               margin: 7px 0px;
+              color: white !important;
             }
             .verify-text {
               margin-top: 25px;
               font-size: 25px;
               letter-spacing: 3px;
+            }
+            .link-box {
+              background-color: #f8f9fa;
+              padding: 15px;
+              border-radius: 8px;
+              border: 1px dashed #007bff;
+              word-wrap: break-word;
+              font-size: 12px;
+              color: #6c757d;
+              margin: 20px 0px;
             }
           </style>
         </head>
@@ -106,36 +113,47 @@ public class EmailSendingService {
           <div class="container-sec">
             <div class="text-center">
               <div>
-                <h1 class="otp-lock"><center>🔒</center></h1>
+                <h1 class="email-lock"><center>🔒</center></h1>
               </div>
               <div class="welcome-section">
-                <div class="app-name"><center>KUN_UZ</center></div>
-                <div class="welcome-text">Ro‘yxatdan o‘tganingiz bilan tabriklaymiz!</div>
-                <div class="verify-text">Emailingizni tasdiqlab qo‘ying Akaginam 😢</div>
+                <div class="app-name"><center><h1>KUN.UZ</h1></center></div>
+                <div class="welcome-text">Ro'yxatdan o'tganingiz bilan tabriklaymiz!</div>
+                <div class="verify-text">Emailingizni tasdiqlab qo'ying Akaginam 😢</div>
                 <div class="email-icon">
                   <h1>📨_________🚛________📬</h1>
                 </div>
               </div>
 
               <h1>Assalomu alaykum, %s 😎</h1>
-              <p>Your One-Time Password (OTP) for verification is:</p>
-              <div class="otp-code">%s</div>
+              <p>Emailingizni tasdiqlash uchun quyidagi tugmani bosing:</p>
 
-              <p class="mt-4">Bu kod 10 daqiqa amal qiladi. \s
-                                                                                          Shoshiling, bo‘lmasa zerikib ketib qoladi 😄</p>
+              <a href="%s" class="btn-verify">✅ Emailni Tasdiqlash</a>
 
-              <a href="%s" class="btn-verify">Tasdiqlash — bosib qo‘ying!</a>
+              <p style="margin-top: 20px;">Yoki quyidagi linkni brauzerga nusxalang:</p>
+              <div class="link-box">%s</div>
+
+              <p class="mt-4" style="color: #dc3545; font-weight: bold;">
+                ⏰ Bu link 15 daqiqa amal qiladi.
+                Shoshiling, bo'lmasa zerikib ketib qoladi 😄
+              </p>
+
+              <p style="color: #6c757d; font-size: 14px;">
+                Agar tugma ishlamasa, yuqoridagi linkni to'g'ridan-to'g'ri brauzerga joylashtiring.
+              </p>
             </div>
 
             <div class="footer-text">
-              <p>Agar “Kodni kiritdim lekin o'xshamadi-ku?” desangiz 😳 — yana yuboravering <br> har holda mazgilar uchun tekin 😂.</p>
-              <p>Hurmat bilan,<br>Mazgilar jamoasi 👨‍💻👨‍💻</p>
+              <p>Agar "Link ishlamadi-ku?" desangiz 😳 — support@giybat.uz ga murojaat qiling yoki 
+              <br>ilovada "Resend Verification" tugmasini bosing.</p>
+              <p style="margin-top: 20px; color: #dc3545;">
+                ⚠️ Agar siz bu emailni kutmagan bo'lsangiz, e'tibor bermang va o'chirib tashlang.
+              </p>
+              <p style="margin-top: 20px;">Hurmat bilan,<br><strong>Mazgilar jamoasi</strong> 👨‍💻👩‍💻</p>
             </div>
           </div>
         </body>
         </html>
-        """.formatted(dto.getName(), dto.getOtp(), dto.getVerifyUrl());
-
+        """.formatted(dto.getName(), dto.getVerifyUrl(), dto.getVerifyUrl());
 
             MimeMessage msg = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
@@ -153,4 +171,3 @@ public class EmailSendingService {
         }
     }
 }
-

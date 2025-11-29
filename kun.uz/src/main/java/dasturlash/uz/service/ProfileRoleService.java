@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,5 +34,16 @@ public class ProfileRoleService {
         return null;
     }
 
+    public Optional<Object> getRole(Integer profileId) {
+        Optional<ProfileRoleEntity> optional = profileRoleRepository.findByProfileId(profileId);
+
+        // 2. Agar entity topilsa, uning Rolini (Enum) qaytarish
+        if (optional.isPresent()) {
+            ProfileRoleEntity entity = optional.get();
+            return Optional.of(entity.getRole()); // getRole() bu ProfileRole enumini qaytaradi
+        }
+
+        return Optional.empty();
+    }
 }
 
