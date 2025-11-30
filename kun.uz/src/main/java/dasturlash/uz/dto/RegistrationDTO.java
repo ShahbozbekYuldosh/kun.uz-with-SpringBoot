@@ -18,9 +18,5 @@ public class RegistrationDTO {
     private String username;
     @NotBlank(message = "password required")
     private String password;
-    @NotNull(message = "Status majburiy")
-    private ProfileStatus profileStatus;
-    @NotNull(message = "Rol ro'yxati majburiy")
-    private List<ProfileRole> roleList;
 }
 

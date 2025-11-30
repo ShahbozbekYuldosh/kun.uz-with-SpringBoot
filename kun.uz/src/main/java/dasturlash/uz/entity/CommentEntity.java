@@ -31,7 +31,7 @@ public class CommentEntity {
     private String content;
 
     @Column(name = "article_id", insertable = false, updatable = false)
-    private UUID articleId;
+    private Integer articleId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id")

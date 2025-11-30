@@ -1,4 +1,4 @@
-package dasturlash.uz.dto;
+package dasturlash.uz.dto.profile;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

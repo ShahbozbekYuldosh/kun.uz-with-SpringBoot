@@ -18,9 +18,14 @@ public class AuthController {
         return ResponseEntity.ok().body(authService.register(registrationDTO));
     }
 
-    @GetMapping("/verify")
+    @GetMapping("/verify/email")
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         return ResponseEntity.ok(authService.verifyEmail(token));
+    }
+
+    @PostMapping("/verify/phone") // ✨ Yangi endpoint
+    public ResponseEntity<String> verifyPhone(@Valid @RequestBody VerificationDTO dto) {
+        return ResponseEntity.ok(authService.verifyPhone(dto));
     }
 
     @PostMapping("/resend-verification")

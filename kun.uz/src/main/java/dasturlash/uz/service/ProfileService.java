@@ -1,7 +1,9 @@
 package dasturlash.uz.service;
 
-import dasturlash.uz.dto.ProfileDTO;
-import dasturlash.uz.dto.RegistrationDTO;
+import dasturlash.uz.dto.profile.ProfileCreateDTO;
+import dasturlash.uz.dto.profile.ProfileDTO;
+import dasturlash.uz.dto.profile.ProfileDetailUpdateDTO;
+import dasturlash.uz.dto.profile.ProfileUpdateByAdminDTO;
 import dasturlash.uz.entity.ProfileEntity;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.exps.AppBadException;
@@ -24,7 +26,7 @@ public class ProfileService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final ProfileRoleService profileRoleService;
 
-    public ProfileDTO create(@Valid RegistrationDTO dto, Integer adminId) {
+    public ProfileDTO create(@Valid ProfileCreateDTO dto, Integer adminId) {
 
         if (dto.getRoleList().contains(ProfileRole.ROLE_ADMIN)) {
             throw new AppBadException("Admin boshqa Admin yarata olmaydi.");
@@ -51,19 +53,19 @@ public class ProfileService {
         profileRepository.save(entity);
 
         // 4. Role'larni kiritish
-        dto.getRoleList().forEach(role -> profileRoleService.create(entity, role)); // getProfileRole() o'rniga getRoleList()
+        dto.getRoleList().forEach(role -> profileRoleService.create(entity, role));
 
         return toInfoDTO(entity);
     }
 
     // ADMIN: 2. Get By Id - Metod nomi getById
     public ProfileDTO getById(Integer id) {
-        ProfileEntity entity = get(id); // yordamchi metod orqali topish
+        ProfileEntity entity = get(id);
         return toInfoDTO(entity);
     }
 
     // ADMIN: 3. Update Profile (Admin boshqa profilni o'zgartiradi)
-    public ProfileDTO updateByAdmin(Integer targetProfileId, RegistrationDTO dto) {
+    public ProfileDTO updateByAdmin(Integer targetProfileId, ProfileUpdateByAdminDTO dto) {
         ProfileEntity entity = get(targetProfileId);
 
         // Name, Surname, Username, Status, Role o'zgarishi mumkin
@@ -89,7 +91,7 @@ public class ProfileService {
     }
 
     // ANY: 4. Update Profile Detail (Foydalanuvchi o'zini o'zgartiradi)
-    public ProfileDTO updateDetail(Integer currentUserId, RegistrationDTO dto) {
+    public ProfileDTO updateDetail(Integer currentUserId, ProfileDetailUpdateDTO dto) {
         ProfileEntity entity = get(currentUserId);
 
         entity.setName(dto.getName());
@@ -120,7 +122,7 @@ public class ProfileService {
             throw new AppBadException("Admin profilini o'chirishga ruxsat yo'q.");
         }
 
-        profileRepository.updateVisible(id, false);
+        profileRepository.updateVisible(false, id);
 //         AttachService.delete(entity.getPhotoId()); // Rasmni ham o'chirish kerak
     }
 
@@ -129,7 +131,7 @@ public class ProfileService {
         ProfileEntity entity = get(currentUserId);
         String oldAttachId = entity.getPhotoId();
 
-        profileRepository.updatePhotoId(currentUserId, attachId);
+        profileRepository.updatePhotoId(attachId, currentUserId);
 
     }
 
@@ -143,13 +145,13 @@ public class ProfileService {
         }
 
         // Yangi parolni hashlab saqlash
-        profileRepository.updatePassword(currentUserId, passwordEncoder.encode(newPassword));
+        profileRepository.updatePassword(passwordEncoder.encode(newPassword), currentUserId);
     }
 
     // ADMIN: 9. Filter (Specification or Criteria API or custom query)
     public Page<ProfileDTO> filter(String query, ProfileRole role, LocalDateTime createdFrom, LocalDateTime createdTo, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return getList(page, size); // Filter mantiqi bo'lmasa, umumiy list qaytariladi
+        return getList(page, size);
     }
 
 

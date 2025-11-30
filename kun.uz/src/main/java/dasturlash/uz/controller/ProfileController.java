@@ -2,8 +2,10 @@ package dasturlash.uz.controller;
 
 
 import dasturlash.uz.config.security.CustomUserDetails;
-import dasturlash.uz.dto.ProfileDTO;
-import dasturlash.uz.dto.RegistrationDTO;
+import dasturlash.uz.dto.profile.ProfileCreateDTO;
+import dasturlash.uz.dto.profile.ProfileDTO;
+import dasturlash.uz.dto.profile.ProfileDetailUpdateDTO;
+import dasturlash.uz.dto.profile.ProfileUpdateByAdminDTO;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.service.ProfileService;
 import jakarta.validation.Valid;
@@ -36,7 +38,7 @@ public class ProfileController {
     // 1. Create profile (ADMIN)
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProfileDTO> create(@Valid @RequestBody RegistrationDTO dto) {
+    public ResponseEntity<ProfileDTO> create(@Valid @RequestBody ProfileCreateDTO dto) {
         Integer adminId = getCurrentUserId();
         ProfileDTO response = profileService.create(dto, adminId);
         return ResponseEntity.ok(response);
@@ -53,7 +55,7 @@ public class ProfileController {
     @PutMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProfileDTO> updateByAdmin(@PathVariable("id") Integer targetId,
-                                                        @Valid @RequestBody RegistrationDTO dto) {
+                                                        @Valid @RequestBody ProfileUpdateByAdminDTO dto) {
         // Admin boshqa profilni o'zgartiradi
         ProfileDTO response = profileService.updateByAdmin(targetId, dto);
         return ResponseEntity.ok(response);
@@ -62,7 +64,7 @@ public class ProfileController {
     // 4. Update Profile Detail (ANY) - Foydalanuvchi o'zini o'zgartiradi
     @PutMapping("/detail")
     @PreAuthorize("isAuthenticated()") // Barcha kirgan foydalanuvchilar
-    public ResponseEntity<ProfileDTO> updateDetail(@Valid @RequestBody RegistrationDTO dto) {
+    public ResponseEntity<ProfileDTO> updateDetail(@Valid @RequestBody ProfileDetailUpdateDTO dto) {
         Integer currentUserId = getCurrentUserId();
         ProfileDTO response = profileService.updateDetail(currentUserId, dto);
         return ResponseEntity.ok(response);

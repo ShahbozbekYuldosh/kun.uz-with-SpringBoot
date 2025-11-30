@@ -1,7 +1,9 @@
 package dasturlash.uz.service;
 
 import dasturlash.uz.dto.*;
+import dasturlash.uz.dto.sms.SmsVerificationDTO;
 import dasturlash.uz.entity.ProfileEntity;
+import dasturlash.uz.enums.ProfileContactType;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.enums.ProfileStatus;
 import dasturlash.uz.exps.AppBadException;
@@ -26,29 +28,43 @@ public class AuthService {
     private final ProfileRepository profileRepository;
     private final ProfileRoleService profileRoleService;
     private final EmailSendingService emailSendingService;
+    private final SmsSendingService smsSendingService;
     private final ProfileService profileService;
     private final JwtUtil jwtUtil;
-    @Value("${app.frontend.url:https://kun.uz}")
+    @Value("${app.frontend.url:}")
     private String frontendUrl;
+    private static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+    private static final String PHONE_REGEX = "^\\+?[0-9]{9,15}$";
 
     private String generateOtp() {
         return String.valueOf((int)(Math.random() * 900000) + 100000);
     }
+    private ProfileContactType getContactType(String username) {
+        if (username.matches(EMAIL_REGEX)) {
+            return ProfileContactType.EMAIL;
+        }
+        if (username.matches(PHONE_REGEX)) {
+            return ProfileContactType.PHONE;
+        }
+        throw new AppBadException("Username not valid: Must be a valid email or phone number.");
+    }
 
+
+    @Transactional
     public String register(RegistrationDTO dto) {
 
-        // 1. Username bandligiga tekshirish
+        // 01. Username email yoki number ekanligiga tekshirish
+        ProfileContactType contactType = getContactType(dto.getUsername());
+
+        // 1. Username bandligiga tekshirish (oldingi mantiq o'zgarishsiz)
         Optional<ProfileEntity> optional =
                 profileRepository.findByUsernameAndVisibleTrue(dto.getUsername());
 
         if (optional.isPresent()) {
             ProfileEntity oldProfile = optional.get();
-
-            // Agar eski profil aktiv emas va tasdiqlash jarayonida bo'lsa
             if (oldProfile.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
                 profileRoleService.deleteRoles(oldProfile.getId());
                 profileRepository.delete(oldProfile);
-                // eski ro'yxatdan o‘tish jarayonini tozalaymiz
             } else {
                 throw new AppBadException("User already exists");
             }
@@ -62,56 +78,67 @@ public class AuthService {
         entity.setStatus(ProfileStatus.REGISTRATION_PROGRESS);
         entity.setVisible(true);
         entity.setCreatedDate(LocalDateTime.now());
+        entity.setContactType(contactType);
 
-        profileRepository.save(entity);
-
-        // 3. Default Role qo‘shish
+        // 3. Default Role qo‘shish (Saqlashdan oldin kerak bo'lsa)
         profileRoleService.create(entity, ProfileRole.ROLE_USER);
 
-        // JWT token yaratish (15 daqiqa amal qiladi)
-        String verificationToken = jwtUtil.generateEmailVerificationToken(
-                entity.getId(),
-                entity.getUsername()
-        );
-        String verifyUrl = frontendUrl + "/auth/verify?token=" + verificationToken;
+        String resultMessage;
 
-        MessageDTO emaildto = new MessageDTO();
-        emaildto.setToAccount(dto.getUsername());
-        emaildto.setSubject("Email Verification");
-        emaildto.setName(dto.getName());
-        emaildto.setVerifyUrl(verifyUrl);
+        if (contactType.equals(ProfileContactType.EMAIL)) {
 
-        emailSendingService.sendMimeMessage(emaildto);
+            profileRepository.save(entity);
 
-        return "Registration successful. Please verify your account.";
+            String verificationToken = jwtUtil.generateEmailVerificationToken(
+                    entity.getId(),
+                    dto.getUsername()
+            );
+            String verifyUrl = frontendUrl + "/auth/verify?token=" + verificationToken;
 
+            MessageDTO emaildto = new MessageDTO();
+            emaildto.setToAccount(dto.getUsername());
+            emaildto.setSubject("Email Verification");
+            emaildto.setName(dto.getName());
+            emaildto.setVerifyUrl(verifyUrl);
+
+            emailSendingService.sendMimeMessage(emaildto);
+            resultMessage = "Registration successful. Please verify your account via email.";
+
+        } else {
+            String otp = generateOtp();
+
+            entity.setVerificationCode(otp);
+            entity.setVerificationCodeGeneratedTime(LocalDateTime.now());
+
+            profileRepository.save(entity);
+
+            smsSendingService.sendSms(dto.getUsername(), "Tasdiqlash kodi: " + otp);
+
+            resultMessage = "Registration successful. Please enter the OTP sent to your phone number.";
+        }
+
+        return resultMessage;
     }
 
     @Transactional
     public String verifyEmail(String token) {
         try {
-            // Token ni parse qilish va validate qilish
             Claims claims = jwtUtil.extractClaims(token);
 
-            // Token type tekshirish
             String tokenType = claims.get("type", String.class);
             if (!"EMAIL_VERIFICATION".equals(tokenType)) {
                 throw new AppBadException("Invalid token type");
             }
 
-            // Profile ID olish
             Integer profileId = claims.get("profileId", Integer.class);
             String username = claims.getSubject();
 
-            // Profile topish
-            ProfileEntity profileEntity = profileService.getById(profileId);
+            ProfileEntity profileEntity = profileService.get(profileId);
 
-            // Username tekshirish (qo'shimcha xavfsizlik)
             if (!profileEntity.getUsername().equals(username)) {
                 throw new AppBadException("Invalid token");
             }
 
-            // Status tekshirish
             if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
                 return "Email already verified";
             }
@@ -120,7 +147,6 @@ public class AuthService {
                 throw new AppBadException("Invalid profile status");
             }
 
-            // Verifikatsiya muvaffaqiyatli
             profileEntity.setStatus(ProfileStatus.ACTIVE);
             profileRepository.save(profileEntity);
 
@@ -134,12 +160,73 @@ public class AuthService {
     }
 
     @Transactional
+    public String verifySms(SmsVerificationDTO dto) {
+
+        ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(dto.getUsername())
+                .orElseThrow(() -> new AppBadException("User not found"));
+
+        if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
+            return "Profile already verified";
+        }
+
+        if (!profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
+            throw new AppBadException("Invalid profile status");
+        }
+
+        if (profileEntity.getSmsCodeGeneratedTime() == null ||
+                profileEntity.getSmsCodeGeneratedTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
+            throw new AppBadException("OTP expired or not sent");
+        }
+
+        if (!profileEntity.getSmsCode().equals(dto.getVerificationCode())) {
+            throw new AppBadException("Invalid OTP");
+        }
+
+        profileEntity.setStatus(ProfileStatus.ACTIVE);
+        profileEntity.setSmsCode(null); // Kodni tozalash
+        profileRepository.save(profileEntity);
+
+        return "Phone number verified successfully. You can now login.";
+    }
+
+
+    @Transactional
+    public String verifyPhone(VerificationDTO dto) {
+
+        ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(dto.getUsername())
+                .orElseThrow(() -> new AppBadException("User not found"));
+
+        if (!profileEntity.getContactType().equals(ProfileContactType.PHONE)) {
+            throw new AppBadException("Invalid verification method for this user.");
+        }
+        if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
+            return "Phone number already verified";
+        }
+        if (!profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
+            throw new AppBadException("Invalid profile status");
+        }
+
+        if (profileEntity.getVerificationCodeGeneratedTime() == null ||
+                profileEntity.getVerificationCodeGeneratedTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
+            throw new AppBadException("OTP expired or not sent");
+        }
+
+        if (!profileEntity.getVerificationCode().equals(dto.getCode())) {
+            throw new AppBadException("Invalid OTP");
+        }
+
+        profileEntity.setStatus(ProfileStatus.ACTIVE);
+        profileEntity.setVerificationCode(null); // Kodni tozalash
+        profileRepository.save(profileEntity);
+
+        return "Phone number verified successfully. You can now login.";
+    }
+
+    @Transactional
     public String resendVerificationEmail(String username) {
-        // Profile topish
         ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(username)
                 .orElseThrow(() -> new AppBadException("User not found"));
 
-        // Status tekshirish
         if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
             throw new AppBadException("User is already verified");
         }
@@ -148,7 +235,6 @@ public class AuthService {
             throw new AppBadException("Invalid profile status");
         }
 
-        // Yangi JWT token yaratish
         String verificationToken = jwtUtil.generateEmailVerificationToken(
                 profileEntity.getId(),
                 profileEntity.getUsername()
@@ -156,7 +242,6 @@ public class AuthService {
 
         String verifyUrl = frontendUrl + "/auth/verify?token=" + verificationToken;
 
-        // Email yuborish
         MessageDTO dto = new MessageDTO();
         dto.setToAccount(username);
         dto.setSubject("Email Verification - New Link");
@@ -169,40 +254,31 @@ public class AuthService {
     }
 
     public LoginResponseDTO login(LoginDTO loginDTO) {
-        // 1. Username bo'yicha profilni topish
         ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(loginDTO.getUsername())
                 .orElseThrow(() -> new AppBadException("Login yoki parol noto'g'ri"));
 
-        // 2. Parolni tekshirish (BCrypt yordamida)
         boolean matches = passwordEncoder.matches(loginDTO.getPassword(), profileEntity.getPassword());
         if (!matches) {
             throw new AppBadException("Login yoki parol noto'g'ri");
         }
 
-        // 3. Profil Statusini tekshirish
         if (!profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
-            // Agar status REGISTRATION_PROGRESS bo'lsa, emailni tasdiqlash kerak
             if (profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
                 throw new AppBadException("Email tasdiqlanmagan. Iltimos, emailingizni tekshiring.");
             }
-            // Boshqa har qanday nofaol status (masalan, BLOCKED, DELETED)
             throw new AppBadException("Sizning profilingiz faol emas.");
         }
 
-        // 4. Role'larni olish (Agar ProfileRoleService bu metodni taqdim etsa)
-        // Login tokeniga role'lar kiritilishi muhim
         ProfileRole role = (ProfileRole) profileRoleService.getRole(profileEntity.getId())
                 .orElseThrow(() -> new AppBadException("Profil role'lari topilmadi"));
 
 
-        // 5. JWT Token yaratish (Auth Token, odatda 24 soat amal qiladi)
         String authToken = jwtUtil.generateAccessToken(profileEntity.getId(), profileEntity.getUsername(), role);
 
-        // 6. Response DTO yaratish
         LoginResponseDTO responseDTO = new LoginResponseDTO();
         responseDTO.setName(profileEntity.getName());
         responseDTO.setUsername(profileEntity.getUsername());
-        responseDTO.setRole(role.name()); // Role enumdan Stringga o'tkazish
+        responseDTO.setRole(role.name());
         responseDTO.setToken(authToken);
 
         return responseDTO;
