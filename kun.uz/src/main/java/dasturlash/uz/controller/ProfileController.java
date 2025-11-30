@@ -2,10 +2,7 @@ package dasturlash.uz.controller;
 
 
 import dasturlash.uz.config.security.CustomUserDetails;
-import dasturlash.uz.dto.profile.ProfileCreateDTO;
-import dasturlash.uz.dto.profile.ProfileDTO;
-import dasturlash.uz.dto.profile.ProfileDetailUpdateDTO;
-import dasturlash.uz.dto.profile.ProfileUpdateByAdminDTO;
+import dasturlash.uz.dto.profile.*;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.service.ProfileService;
 import jakarta.validation.Valid;
@@ -37,7 +34,7 @@ public class ProfileController {
 
     // 1. Create profile (ADMIN)
     @PostMapping("/admin")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ProfileDTO> create(@Valid @RequestBody ProfileCreateDTO dto) {
         Integer adminId = getCurrentUserId();
         ProfileDTO response = profileService.create(dto, adminId);
@@ -88,21 +85,21 @@ public class ProfileController {
     }
 
     // 7. Update Photo (ANY)
-    @PutMapping("/photo/{photo_id}")
+    @PutMapping("/photo") // URI ni tozalaymiz
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> updatePhoto(@PathVariable("photo_id") String attachId) {
+    public ResponseEntity<Void> updatePhoto(@Valid @RequestBody PhotoUpdateDTO dto) {
         Integer currentUserId = getCurrentUserId();
-        profileService.updatePhoto(currentUserId, attachId);
+        profileService.updatePhoto(currentUserId, dto.getAttachId());
         return ResponseEntity.ok().build();
     }
 
     // 8. Update Password (ANY)
     @PutMapping("/password")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> updatePassword(@RequestParam("old") String oldPassword,
-                                               @RequestParam("new") String newPassword) {
+    public ResponseEntity<Void> updatePassword(@Valid @RequestBody PasswordUpdateDTO dto) {
         Integer currentUserId = getCurrentUserId();
-        profileService.updatePassword(currentUserId, oldPassword, newPassword);
+        profileService.updatePassword(currentUserId, dto.getOldPassword(), dto.getNewPassword());
+
         return ResponseEntity.ok().build();
     }
 

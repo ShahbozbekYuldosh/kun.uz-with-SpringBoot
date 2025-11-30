@@ -52,48 +52,56 @@ public class AuthService {
 
     @Transactional
     public String register(RegistrationDTO dto) {
-
-        // 01. Username email yoki number ekanligiga tekshirish
         ProfileContactType contactType = getContactType(dto.getUsername());
+        ProfileEntity entity; // ✨ Tashqariga chiqarildi
 
-        // 1. Username bandligiga tekshirish (oldingi mantiq o'zgarishsiz)
         Optional<ProfileEntity> optional =
                 profileRepository.findByUsernameAndVisibleTrue(dto.getUsername());
 
         if (optional.isPresent()) {
             ProfileEntity oldProfile = optional.get();
+
+            // Agar tasdiqlash jarayonida bo'lsa, uni O'CHIRISH O'RNIGA YANGILAYMIZ
             if (oldProfile.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
+
+                // Eski role'larni o'chiramiz va yangisini yaratamiz, chunki profil ID bir xil
                 profileRoleService.deleteRoles(oldProfile.getId());
-                profileRepository.delete(oldProfile);
+
+                // Mavjud entityni yangi ma'lumotlar bilan to'ldiramiz
+                entity = oldProfile;
+                entity.setName(dto.getName());
+                entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+                entity.setCreatedDate(LocalDateTime.now());
+                // Status, username, contactType allaqachon bor va o'zgarmaydi.
+
             } else {
+                // Agar ACTIVE yoki BLOCKED bo'lsa, ruxsat yo'q
                 throw new AppBadException("User already exists");
             }
+        } else {
+            // Yangi profil yaratish (avvalgi mantiq)
+            entity = new ProfileEntity();
+            entity.setName(dto.getName());
+            entity.setUsername(dto.getUsername());
+            entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+            entity.setContactType(contactType);
+            entity.setVisible(true);
         }
-
-        // 2. Yangi profil yaratish
-        ProfileEntity entity = new ProfileEntity();
-        entity.setName(dto.getName());
-        entity.setUsername(dto.getUsername());
-        entity.setPassword(passwordEncoder.encode(dto.getPassword()));
         entity.setStatus(ProfileStatus.REGISTRATION_PROGRESS);
-        entity.setVisible(true);
-        entity.setCreatedDate(LocalDateTime.now());
-        entity.setContactType(contactType);
 
-        // 3. Default Role qo‘shish (Saqlashdan oldin kerak bo'lsa)
-        profileRoleService.create(entity, ProfileRole.ROLE_USER);
 
         String resultMessage;
 
         if (contactType.equals(ProfileContactType.EMAIL)) {
 
             profileRepository.save(entity);
+            profileRoleService.create(entity, ProfileRole.ROLE_USER);
 
             String verificationToken = jwtUtil.generateEmailVerificationToken(
                     entity.getId(),
                     dto.getUsername()
             );
-            String verifyUrl = frontendUrl + "/auth/verify?token=" + verificationToken;
+            String verifyUrl = frontendUrl + "/auth/verify/email?token=" + verificationToken;
 
             MessageDTO emaildto = new MessageDTO();
             emaildto.setToAccount(dto.getUsername());
@@ -109,9 +117,8 @@ public class AuthService {
 
             entity.setVerificationCode(otp);
             entity.setVerificationCodeGeneratedTime(LocalDateTime.now());
-
             profileRepository.save(entity);
-
+            profileRoleService.create(entity, ProfileRole.ROLE_USER);
             smsSendingService.sendSms(dto.getUsername(), "Tasdiqlash kodi: " + otp);
 
             resultMessage = "Registration successful. Please enter the OTP sent to your phone number.";
