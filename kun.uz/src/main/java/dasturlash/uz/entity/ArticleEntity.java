@@ -53,7 +53,7 @@ public class ArticleEntity {
     private ArticleStatusEnum status;
 
     @Column(name = "read_time")
-    private Integer readTime; // maqolani o'qish vaqti daqiqa bilan
+    private Integer readTime;
 
     @CreationTimestamp
     @Column(name = "created_date")
@@ -77,7 +77,6 @@ public class ArticleEntity {
     )
     private Set<CategoryEntity> categories = new HashSet<>();
 
-    // Section bilan bog'lanish (ManyToMany)
     @ManyToMany
     @JoinTable(
             name = "article_section",

@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // agar JWT/REST bo'lsa
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/v1/profile/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

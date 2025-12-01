@@ -32,7 +32,7 @@ public class ArticleLikeEntity {
     private ArticleEntity article;
 
     @Enumerated(EnumType.STRING)
-    private Emotion emotion; // LIKE or DISLIKE
+    private Emotion emotion;
 
     private LocalDateTime createdDate;
 }

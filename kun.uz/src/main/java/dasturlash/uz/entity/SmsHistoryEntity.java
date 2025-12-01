@@ -18,6 +18,6 @@ public class SmsHistoryEntity {
     private String phone;
     private String message;
     private String status;
-    private String type; // optional
+    private String type;
     private LocalDateTime createdDate;
 }
