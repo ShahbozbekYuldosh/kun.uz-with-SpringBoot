@@ -6,6 +6,7 @@ import dasturlash.uz.entity.ProfileEntity;
 import dasturlash.uz.enums.ProfileContactType;
 import dasturlash.uz.enums.ProfileRole;
 import dasturlash.uz.enums.ProfileStatus;
+import dasturlash.uz.enums.SmsStatus;
 import dasturlash.uz.exps.AppBadException;
 import dasturlash.uz.repository.ProfileRepository;
 import dasturlash.uz.util.JwtUtil;
@@ -29,6 +30,7 @@ public class AuthService {
     private final ProfileRoleService profileRoleService;
     private final EmailSendingService emailSendingService;
     private final SmsSendingService smsSendingService;
+    private final SmsHistoryService smsHistoryService;
     private final ProfileService profileService;
     private final JwtUtil jwtUtil;
     @Value("${app.frontend.url:}")
@@ -53,7 +55,7 @@ public class AuthService {
     @Transactional
     public String register(RegistrationDTO dto) {
         ProfileContactType contactType = getContactType(dto.getUsername());
-        ProfileEntity entity; // ✨ Tashqariga chiqarildi
+        ProfileEntity entity;
 
         Optional<ProfileEntity> optional =
                 profileRepository.findByUsernameAndVisibleTrue(dto.getUsername());
@@ -61,21 +63,16 @@ public class AuthService {
         if (optional.isPresent()) {
             ProfileEntity oldProfile = optional.get();
 
-            // Agar tasdiqlash jarayonida bo'lsa, uni O'CHIRISH O'RNIGA YANGILAYMIZ
             if (oldProfile.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
 
-                // Eski role'larni o'chiramiz va yangisini yaratamiz, chunki profil ID bir xil
                 profileRoleService.deleteRoles(oldProfile.getId());
 
-                // Mavjud entityni yangi ma'lumotlar bilan to'ldiramiz
                 entity = oldProfile;
                 entity.setName(dto.getName());
                 entity.setPassword(passwordEncoder.encode(dto.getPassword()));
                 entity.setCreatedDate(LocalDateTime.now());
-                // Status, username, contactType allaqachon bor va o'zgarmaydi.
 
             } else {
-                // Agar ACTIVE yoki BLOCKED bo'lsa, ruxsat yo'q
                 throw new AppBadException("User already exists");
             }
         } else {
@@ -168,17 +165,8 @@ public class AuthService {
 
     @Transactional
     public String verifySms(SmsVerificationDTO dto) {
-
         ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(dto.getUsername())
                 .orElseThrow(() -> new AppBadException("User not found"));
-
-        if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
-            return "Profile already verified";
-        }
-
-        if (!profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
-            throw new AppBadException("Invalid profile status");
-        }
 
         if (profileEntity.getSmsCodeGeneratedTime() == null ||
                 profileEntity.getSmsCodeGeneratedTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
@@ -186,11 +174,20 @@ public class AuthService {
         }
 
         if (!profileEntity.getSmsCode().equals(dto.getVerificationCode())) {
+
+
+            smsHistoryService.create(
+                    dto.getUsername(),
+                    profileEntity.getSmsCode(),
+                    SmsStatus.FAIL,
+                    "SMS_VERIFY_FAILURE"
+            );
+
             throw new AppBadException("Invalid OTP");
         }
 
         profileEntity.setStatus(ProfileStatus.ACTIVE);
-        profileEntity.setSmsCode(null); // Kodni tozalash
+        profileEntity.setSmsCode(null);
         profileRepository.save(profileEntity);
 
         return "Phone number verified successfully. You can now login.";
@@ -223,7 +220,7 @@ public class AuthService {
         }
 
         profileEntity.setStatus(ProfileStatus.ACTIVE);
-        profileEntity.setVerificationCode(null); // Kodni tozalash
+        profileEntity.setVerificationCode(null);
         profileRepository.save(profileEntity);
 
         return "Phone number verified successfully. You can now login.";

@@ -1,6 +1,7 @@
 package dasturlash.uz.controller;
 
 import dasturlash.uz.dto.*;
+import dasturlash.uz.dto.sms.SmsVerificationDTO;
 import dasturlash.uz.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +24,14 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyEmail(token));
     }
 
-    @PostMapping("/verify/phone") // ✨ Yangi endpoint
+    @PostMapping("/verify/phone")
     public ResponseEntity<String> verifyPhone(@Valid @RequestBody VerificationDTO dto) {
         return ResponseEntity.ok(authService.verifyPhone(dto));
+    }
+
+    @PostMapping("/verify/sms")
+    public ResponseEntity<String> verifyPhone(@Valid @RequestBody SmsVerificationDTO dto) {
+        return ResponseEntity.ok(authService.verifySms(dto));
     }
 
     @PostMapping("/resend-verification")

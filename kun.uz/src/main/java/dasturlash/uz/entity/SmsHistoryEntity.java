@@ -1,9 +1,9 @@
 package dasturlash.uz.entity;
 
+import dasturlash.uz.enums.SmsStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,13 +11,24 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class SmsHistoryEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(nullable = false)
     private String phone;
+
+    @Column(nullable = false, columnDefinition = "text")
     private String message;
-    private String status;
-    private String type;
-    private LocalDateTime createdDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    private SmsStatus status;
+
+    @Column(name = "created_date", nullable = false)
+    private LocalDateTime createdDate = LocalDateTime.now();
+
+    @Column(name = "service_id")
+    private String serviceId;
 }
