@@ -57,5 +57,9 @@ public class ProfileRoleService {
 
         return roles;
     }
+
+    public boolean existsByRole(ProfileRole role) {
+        return profileRoleRepository.existsByRole(role);
+    }
 }
 

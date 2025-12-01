@@ -23,7 +23,6 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    // Yordamchi metod: Avtorizatsiyadan o'tgan foydalanuvchi IDsini olish
     private Integer getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
@@ -53,7 +52,6 @@ public class ProfileController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProfileDTO> updateByAdmin(@PathVariable("id") Integer targetId,
                                                         @Valid @RequestBody ProfileUpdateByAdminDTO dto) {
-        // Admin boshqa profilni o'zgartiradi
         ProfileDTO response = profileService.updateByAdmin(targetId, dto);
         return ResponseEntity.ok(response);
     }

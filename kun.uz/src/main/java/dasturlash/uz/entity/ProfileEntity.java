@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -30,11 +31,10 @@ public class ProfileEntity {
     @Enumerated(EnumType.STRING)
     private ProfileStatus status = ProfileStatus.ACTIVE;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "profile_role", joinColumns = @JoinColumn(name = "profile_id"))
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
-    private Set<ProfileRole> roleList = new HashSet<>();
+    @OneToMany(mappedBy = "profile", fetch = FetchType.EAGER)
+    private List<ProfileRoleEntity> profileRoles;
 
     @Column(name = "photo_id")
     private String photoId;
