@@ -19,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,11 +53,10 @@ public class AttachService {
         }
 
         try {
-            String pathFolder = getYmDString(); // 2024/11/05
+            String pathFolder = getYmDString();
             String key = UUID.randomUUID().toString();
             String extension = getExtension(Objects.requireNonNull(file.getOriginalFilename()));
 
-            // Papka yaratish
             File folder = new File(folderName + "/" + pathFolder);
             if (!folder.exists()) {
                 if (!folder.mkdirs()) {
@@ -66,7 +64,6 @@ public class AttachService {
                 }
             }
 
-            // Fayl tizimiga saqlash
             String fileName = key + "." + extension;
             Path path = Paths.get(folderName + "/" + pathFolder + "/" + fileName);
             Files.write(path, file.getBytes());
@@ -127,7 +124,6 @@ public class AttachService {
                 throw new AppBadException("File not found on system: " + attachId);
             }
 
-            // Faylni yuklab olishga majburlovchi header
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/octet-stream"))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + entity.getFileName() + "\"")
@@ -143,7 +139,6 @@ public class AttachService {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdDate");
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Agar faqat visible=true larni olmoqchi bo'lsangiz, Repositoryda usul bo'lishi kerak.
         Page<AttachEntity> entityPage = attachRepository.findAll(pageable);
 
         List<AttachDTO> dtoList = entityPage.getContent().stream()
@@ -164,23 +159,19 @@ public class AttachService {
         String filePathString = getPath(entity);
 
         try {
-            // 1. Faylni fayl tizimidan o'chirish
             Files.deleteIfExists(Paths.get(filePathString));
 
-            // 2. DB'dan o'chirish
             attachRepository.delete(entity);
 
             return "File deleted successfully: " + attachId;
 
         } catch (IOException e) {
-            // Agar fayl tizimidan o'chirishda xato bo'lsa
             throw new AppBadException("Failed to delete file from system: " + e.getMessage());
         }
     }
 
 // --- HELPER METHODS --------------------------------------------------------------------------------------------------
 
-    // AttachEntity'ni ID bo'yicha topuvchi yordamchi metod
     private AttachEntity get(String attachId) {
         return attachRepository.findById(attachId)
                 .orElseThrow(() -> new AppBadException("Attach not found: " + attachId));
@@ -190,7 +181,6 @@ public class AttachService {
         return folderName + "/" + entity.getPath() + "/" + entity.getFileName();
     }
 
-    // Yil/Oy/Kun formatini qaytaradi (Masalan: 2024/11/5)
     private String getYmDString() {
         int year = Calendar.getInstance().get(Calendar.YEAR);
         int month = Calendar.getInstance().get(Calendar.MONTH) + 1;
@@ -198,7 +188,6 @@ public class AttachService {
         return year + "/" + month + "/" + day;
     }
 
-    // Fayl kengaytmasini ajratib oladi
     private String getExtension(String fileName) {
         int lastIndex = fileName.lastIndexOf(".");
         if (lastIndex == -1) {
