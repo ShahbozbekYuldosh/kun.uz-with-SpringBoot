@@ -1,6 +1,7 @@
 package dasturlash.uz.controller;
 
 import dasturlash.uz.dto.*;
+import dasturlash.uz.dto.profile.ResendSmsDTO;
 import dasturlash.uz.dto.sms.SmsVerificationDTO;
 import dasturlash.uz.service.AuthService;
 import jakarta.validation.Valid;
@@ -30,13 +31,18 @@ public class AuthController {
     }
 
     @PostMapping("/verify/sms")
-    public ResponseEntity<String> verifyPhone(@Valid @RequestBody SmsVerificationDTO dto) {
+    public ResponseEntity<String> verifySms(@Valid @RequestBody SmsVerificationDTO dto) {
         return ResponseEntity.ok(authService.verifySms(dto));
     }
 
     @PostMapping("/resend-verification")
     public ResponseEntity<String> resendVerification(@RequestParam String username) {
         return ResponseEntity.ok(authService.resendVerificationEmail(username));
+    }
+
+    @PostMapping("/resend-verificationSms")
+    public ResponseEntity<String> resendVerificationSms(@RequestBody ResendSmsDTO dto) {
+        return ResponseEntity.ok(authService.resendVerificationSms(dto));
     }
 
     @PostMapping("/login")

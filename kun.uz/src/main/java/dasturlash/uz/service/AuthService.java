@@ -1,6 +1,8 @@
 package dasturlash.uz.service;
 
+import ch.qos.logback.core.testUtil.RandomUtil;
 import dasturlash.uz.dto.*;
+import dasturlash.uz.dto.profile.ResendSmsDTO;
 import dasturlash.uz.dto.sms.SmsVerificationDTO;
 import dasturlash.uz.entity.ProfileEntity;
 import dasturlash.uz.enums.ProfileContactType;
@@ -168,9 +170,13 @@ public class AuthService {
         ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(dto.getUsername())
                 .orElseThrow(() -> new AppBadException("User not found"));
 
-        if (profileEntity.getSmsCodeGeneratedTime() == null ||
-                profileEntity.getSmsCodeGeneratedTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
+        if (profileEntity.getVerificationCodeGeneratedTime() == null ||
+                profileEntity.getVerificationCodeGeneratedTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
             throw new AppBadException("OTP expired or not sent");
+        }
+
+        if (!profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
+            throw new AppBadException("Invalid profile status for verification.");
         }
 
         if (!profileEntity.getSmsCode().equals(dto.getVerificationCode())) {
@@ -192,7 +198,6 @@ public class AuthService {
 
         return "Phone number verified successfully. You can now login.";
     }
-
 
     @Transactional
     public String verifyPhone(VerificationDTO dto) {
@@ -255,6 +260,39 @@ public class AuthService {
         emailSendingService.sendMimeMessage(dto);
 
         return "New verification link sent to your email";
+    }
+
+    @Transactional
+    public String resendVerificationSms(ResendSmsDTO phone) {
+
+        String phoneNumber = phone.getUsername();
+
+        ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(phoneNumber)
+                .orElseThrow(() -> new AppBadException("User not found"));
+
+        if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
+            throw new AppBadException("User is already verified");
+        }
+
+        if (!profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
+            throw new AppBadException("Invalid profile status");
+        }
+
+        String smsCode = generateOtp();
+
+        profileEntity.setSmsCode(smsCode);
+        profileEntity.setSmsCodeGeneratedTime(LocalDateTime.now());
+        profileRepository.save(profileEntity);
+
+        try {
+            smsHistoryService.create(phoneNumber, smsCode, SmsStatus.SUCCESS, "RESEND_SMS");
+
+        } catch (Exception e) {
+            smsHistoryService.create(phoneNumber, smsCode, SmsStatus.FAIL, "RESEND_SMS_ERROR");
+            throw new AppBadException("Failed to resend SMS verification code.");
+        }
+
+        return "New verification code sent to your phone number: " + phoneNumber;
     }
 
     public LoginResponseDTO login(LoginDTO loginDTO) {

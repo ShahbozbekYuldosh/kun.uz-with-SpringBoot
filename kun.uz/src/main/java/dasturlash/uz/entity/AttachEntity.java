@@ -15,21 +15,27 @@ import java.util.UUID;
 public class AttachEntity {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
 
     @Column(name = "original_name", nullable = false)
-    private String originalName; // Faylning original nomi
+    private String originalName;
+
+    @Column(name = "file_name", nullable = false, unique = true)
+    private String fileName;
 
     @Column(name = "path", nullable = false)
-    private String path; // Fayl tizimdagi yoki serverdagi joylashuvi
+    private String path;
 
     @Column(name = "size", nullable = false)
-    private Long size; // Fayl hajmi
+    private Long size;
 
     @Column(name = "extension", nullable = false)
-    private String extension; // Fayl kengaytmasi (jpg, png, pdf, ...)
+    private String extension;
+
+    @Column(name = "visible")
+    private Boolean visible = true;
 
     @CreationTimestamp
     @Column(name = "created_date", updatable = false)
