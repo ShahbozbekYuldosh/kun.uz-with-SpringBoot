@@ -11,6 +11,8 @@ import java.util.List;
 public class PaginationResponseDTO<T> {
 
     private List<T> content;
-
     private Long totalElements;
+    private int totalPages;
+    private int size;
+    private int page;
 }

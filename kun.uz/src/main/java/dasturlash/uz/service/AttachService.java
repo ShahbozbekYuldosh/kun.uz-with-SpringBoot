@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -122,14 +123,21 @@ public class AttachService {
 
     // --------------------------- PAGINATION ---------------------------
     public PaginationResponseDTO<AttachDTO> pagination(int page, int size) {
-        Page<AttachEntity> entityPage = attachRepository.findAll(
-                PageRequest.of(page, size, Sort.by("createdDate").descending())
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AttachEntity> result = attachRepository.findAll(pageable);
+
+        return new PaginationResponseDTO<>(
+                result.getContent()
+                        .stream()
+                        .map(this::toDTO)
+                        .collect(Collectors.toList()),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.getSize(),
+                result.getNumber()
         );
-
-        List<AttachDTO> dtoList = entityPage.map(this::toDTO).toList();
-
-        return new PaginationResponseDTO<>(dtoList, entityPage.getTotalElements());
     }
+
 
     // --------------------------- DELETE ---------------------------
     @Transactional
