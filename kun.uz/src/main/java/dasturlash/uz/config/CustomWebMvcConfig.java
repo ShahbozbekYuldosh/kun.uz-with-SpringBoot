@@ -11,17 +11,10 @@ public class CustomWebMvcConfig implements WebMvcConfigurer {
     @Value("${attach.upload.folder}")
     private String attachUploadFolder;
 
-    @Value("${attach.file.access.prefix}")
-    private String attachFileAccessPrefix;
-
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
 
-        String resourceHandler = attachFileAccessPrefix + "/**";
-        String resourceLocation = "file:///" + attachUploadFolder.replace("\\", "/") + "/";
-
-        registry.addResourceHandler(resourceHandler)
-                .addResourceLocations(resourceLocation);
+        registry.addResourceHandler("/files/**")
+                .addResourceLocations("file:" + attachUploadFolder + "/");
     }
 }

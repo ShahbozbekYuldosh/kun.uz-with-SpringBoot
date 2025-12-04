@@ -16,51 +16,29 @@ public class AttachController {
 
     private final AttachService attachService;
 
-    // --- 1. UPLOAD (ANY) ---
     @PostMapping("/upload")
-    public ResponseEntity<AttachDTO> upload(@RequestParam("file") MultipartFile file) {
-        AttachDTO dto = attachService.upload(file);
-        return ResponseEntity.ok(dto);
+    public AttachDTO upload(@RequestParam("file") MultipartFile file) {
+        return attachService.upload(file);
     }
 
-    // --- 2. OPEN (ANY) ---
-    // Fayl ID orqali brauzerda ko'rish
     @GetMapping("/open/{id}")
-    public ResponseEntity<Resource> open(@PathVariable("id") String id) {
-        // AttachService.open() metodi Resource va ContentType'ni qaytaradi
+    public ResponseEntity<Resource> open(@PathVariable String id) {
         return attachService.open(id);
     }
 
-    // --- 3. DOWNLOAD (ANY) ---
-    // Fayl ID orqali yuklab olish
     @GetMapping("/download/{id}")
-    public ResponseEntity<Resource> download(@PathVariable("id") String id) {
-        // AttachService.download() metodi Resource va Content-Disposition headerini qaytaradi
+    public ResponseEntity<Resource> download(@PathVariable String id) {
         return attachService.download(id);
     }
 
-    // --- 4. PAGINATION (ADMIN) ---
     @GetMapping("/adm/pagination")
-    public ResponseEntity<PaginationResponseDTO<AttachDTO>> getPagination(
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size
-            /* HttpServletRequest orqali ADMIN rolini tekshirish lozim */) {
-
-        // Agar xavfsizlik (Security) ishlatilmasa, yuqoridagi kommentariy o'rnida
-        // JwtUtil.getIdFromHeader(request, ProfileRole.ADMIN) kabi tekshiruv bo'lishi kerak.
-
-        PaginationResponseDTO<AttachDTO> response = attachService.getPagination(page, size);
-        return ResponseEntity.ok(response);
+    public PaginationResponseDTO<AttachDTO> pagination(@RequestParam int page,
+                                                       @RequestParam int size) {
+        return attachService.pagination(page, size);
     }
 
-    // --- 5. DELETE (ADMIN) ---
     @DeleteMapping("/adm/{id}")
-    public ResponseEntity<String> delete(@PathVariable("id") String id
-            /* HttpServletRequest request */) {
-
-        // ADMIN rolini tekshirish shart
-
-        String response = attachService.delete(id);
-        return ResponseEntity.ok(response);
+    public String delete(@PathVariable String id) {
+        return attachService.delete(id);
     }
 }

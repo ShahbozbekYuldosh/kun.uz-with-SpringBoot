@@ -6,95 +6,85 @@ import dasturlash.uz.entity.AttachEntity;
 import dasturlash.uz.exps.AppBadException;
 import dasturlash.uz.repository.AttachRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.*;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class AttachService {
 
-    @Autowired
-    private AttachRepository attachRepository;
+    private final AttachRepository attachRepository;
 
     @Value("${attach.upload.folder}")
     private String folderName;
-    @Value("${attach.file.access.prefix}")
-    private String attachFileAccessPrefix;
+
     @Value("${server.domain.name}")
     private String domainName;
 
-// --- 1. UPLOAD (ANY) -------------------------------------------------------------------------------------------------
-
+    // --------------------------- UPLOAD ---------------------------
     public AttachDTO upload(MultipartFile file) {
+
         if (file.isEmpty()) {
             throw new AppBadException("File not found");
         }
 
         try {
-            String pathFolder = getYmDString();
-            String key = UUID.randomUUID().toString();
-            String extension = getExtension(Objects.requireNonNull(file.getOriginalFilename()));
+            String id = UUID.randomUUID().toString();
+            String dateFolder = getFolderPath();
+            String ext = getExtension(Objects.requireNonNull(file.getOriginalFilename()));
 
-            File folder = new File(folderName + "/" + pathFolder);
+            File folder = new File(folderName + "/" + dateFolder);
             if (!folder.exists()) {
-                if (!folder.mkdirs()) {
-                    throw new IOException("Failed to create directories: " + folder.getAbsolutePath());
-                }
+                folder.mkdirs();
             }
 
-            String fileName = key + "." + extension;
-            Path path = Paths.get(folderName + "/" + pathFolder + "/" + fileName);
+            String fileName = id + "." + ext;
+            Path path = Paths.get(folderName + "/" + dateFolder + "/" + fileName);
+
             Files.write(path, file.getBytes());
 
-            // DBga saqlash
+            // Save DB
             AttachEntity entity = new AttachEntity();
+            entity.setId(id);
             entity.setFileName(fileName);
-            entity.setPath(pathFolder);
+            entity.setPath(dateFolder);
             entity.setSize(file.getSize());
             entity.setOriginalName(file.getOriginalFilename());
-            entity.setExtension(extension);
+            entity.setExtension(ext);
             entity.setVisible(true);
-            attachRepository.save(entity);
 
-            return toDTO(entity);
+            AttachEntity saved = attachRepository.save(entity);
+
+            return toDTO(saved);
+
         } catch (IOException e) {
-            throw new AppBadException("File upload failed: " + e.getMessage());
+            throw new AppBadException("Error while uploading file");
         }
     }
 
-// --- 2. OPEN (BY ID) -------------------------------------------------------------------------------------------------
+    // --------------------------- OPEN ---------------------------
+    public ResponseEntity<Resource> open(String id) {
+        AttachEntity entity = get(id);
 
-    public ResponseEntity<Resource> open(String attachId) {
-        AttachEntity entity = get(attachId);
-        String filePathString = getPath(entity);
+        Path filePath = Paths.get(getFullPath(entity));
 
-        Path filePath = Paths.get(filePathString);
         try {
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists()) {
-                throw new AppBadException("File not found on system: " + attachId);
+                throw new AppBadException("File not found");
             }
 
             String contentType = Files.probeContentType(filePath);
@@ -104,113 +94,86 @@ public class AttachService {
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .contentLength(resource.contentLength())
                     .body(resource);
+
         } catch (IOException e) {
-            throw new AppBadException("Error opening file: " + e.getMessage());
+            throw new AppBadException("File open error");
         }
     }
 
-// --- 3. DOWNLOAD (BY ID WITH ORIGIN NAME) -----------------------------------------------------------------------------
-
-    public ResponseEntity<Resource> download(String attachId) {
-        AttachEntity entity = get(attachId);
-        String filePathString = getPath(entity);
-        Path filePath = Paths.get(filePathString);
+    // --------------------------- DOWNLOAD ---------------------------
+    public ResponseEntity<Resource> download(String id) {
+        AttachEntity entity = get(id);
+        Path filePath = Paths.get(getFullPath(entity));
 
         try {
             Resource resource = new UrlResource(filePath.toUri());
-            if (!resource.exists()) {
-                throw new AppBadException("File not found on system: " + attachId);
-            }
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType("application/octet-stream"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + entity.getFileName() + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + entity.getOriginalName() + "\"")
                     .body(resource);
+
         } catch (MalformedURLException e) {
-            throw new AppBadException("Error preparing file for download: " + e.getMessage());
+            throw new AppBadException("Download error");
         }
     }
 
-// --- 4. PAGINATION (ADMIN) -------------------------------------------------------------------------------------------
-
-    public PaginationResponseDTO<AttachDTO> getPagination(int page, int size) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "createdDate");
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<AttachEntity> entityPage = attachRepository.findAll(pageable);
-
-        List<AttachDTO> dtoList = entityPage.getContent().stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-
-        return new PaginationResponseDTO<>(
-                dtoList,
-                entityPage.getTotalElements()
+    // --------------------------- PAGINATION ---------------------------
+    public PaginationResponseDTO<AttachDTO> pagination(int page, int size) {
+        Page<AttachEntity> entityPage = attachRepository.findAll(
+                PageRequest.of(page, size, Sort.by("createdDate").descending())
         );
+
+        List<AttachDTO> dtoList = entityPage.map(this::toDTO).toList();
+
+        return new PaginationResponseDTO<>(dtoList, entityPage.getTotalElements());
     }
 
-// --- 5. DELETE (ADMIN) -----------------------------------------------------------------------------------------------
-
+    // --------------------------- DELETE ---------------------------
     @Transactional
-    public String delete(String attachId) {
-        AttachEntity entity = get(attachId);
-        String filePathString = getPath(entity);
+    public String delete(String id) {
+        AttachEntity entity = get(id);
 
         try {
-            Files.deleteIfExists(Paths.get(filePathString));
-
+            Files.deleteIfExists(Paths.get(getFullPath(entity)));
             attachRepository.delete(entity);
 
-            return "File deleted successfully: " + attachId;
+            return "Deleted";
 
         } catch (IOException e) {
-            throw new AppBadException("Failed to delete file from system: " + e.getMessage());
+            throw new AppBadException("Delete error");
         }
     }
 
-// --- HELPER METHODS --------------------------------------------------------------------------------------------------
-
-    private AttachEntity get(String attachId) {
-        return attachRepository.findById(attachId)
-                .orElseThrow(() -> new AppBadException("Attach not found: " + attachId));
+    // --------------------------- HELPERS ---------------------------
+    private AttachEntity get(String id) {
+        return attachRepository.findById(id)
+                .orElseThrow(() -> new AppBadException("Attach not found"));
     }
 
-    private String getPath(AttachEntity entity) {
+    private String getFullPath(AttachEntity entity) {
         return folderName + "/" + entity.getPath() + "/" + entity.getFileName();
     }
 
-    private String getYmDString() {
-        int year = Calendar.getInstance().get(Calendar.YEAR);
-        int month = Calendar.getInstance().get(Calendar.MONTH) + 1;
-        int day = Calendar.getInstance().get(Calendar.DATE);
-        return year + "/" + month + "/" + day;
+    private String getFolderPath() {
+        LocalDateTime now = LocalDateTime.now();
+        return now.getYear() + "/" + now.getMonthValue() + "/" + now.getDayOfMonth();
     }
 
     private String getExtension(String fileName) {
-        int lastIndex = fileName.lastIndexOf(".");
-        if (lastIndex == -1) {
-            return "";
-        }
-        return fileName.substring(lastIndex + 1);
-    }
-
-    private String openURL(String fileName) {
-        return domainName + attachFileAccessPrefix + "/open/" + fileName;
+        return fileName.substring(fileName.lastIndexOf('.') + 1);
     }
 
     private AttachDTO toDTO(AttachEntity entity) {
-        AttachDTO attachDTO = new AttachDTO();
-        attachDTO.setId(entity.getFileName());
-        attachDTO.setOriginName(entity.getOriginalName());
-        attachDTO.setSize(entity.getSize());
-        attachDTO.setExtension(entity.getExtension());
-        attachDTO.setCreatedData(entity.getCreatedDate());
-        attachDTO.setUrl(openURL(entity.getFileName()));
-        return attachDTO;
+        AttachDTO dto = new AttachDTO();
+        dto.setId(entity.getId());
+        dto.setOriginName(entity.getOriginalName());
+        dto.setSize(entity.getSize());
+        dto.setExtension(entity.getExtension());
+        dto.setCreatedDate(entity.getCreatedDate());
+        dto.setUrl(domainName + "/api/v1/attach/open/" + entity.getId());
+        return dto;
     }
-
-//    -----------------------------------------------------------------------------------------------------------------
-
 }

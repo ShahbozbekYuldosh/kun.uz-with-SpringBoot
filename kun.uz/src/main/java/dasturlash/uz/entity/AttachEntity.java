@@ -15,9 +15,8 @@ import java.util.UUID;
 public class AttachEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Integer id;
+    @Column(name = "id", nullable = false, updatable = false)
+    private String id;
 
     @Column(name = "original_name", nullable = false)
     private String originalName;

@@ -2,6 +2,7 @@ package dasturlash.uz.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Getter
@@ -13,5 +14,5 @@ public class AttachDTO {
     private Long size;
     private String extension;
     private String url;
-    private LocalDateTime createdData;
+    private LocalDateTime createdDate;
 }
