@@ -13,24 +13,6 @@ import java.util.Optional;
 
 public interface ArticleRepository extends JpaRepository<ArticleEntity, Integer> {
 
-    Page<ArticleEntity> findAllBySections_SectionIdAndStatusAndVisibleTrueOrderByCreatedDateDesc(
-            Integer sectionId, ArticleStatusEnum status, Pageable pageable);
-
-    Page<ArticleEntity> findAllByCategories_CategoryIdAndStatusAndVisibleTrueOrderByCreatedDateDesc(
-            Integer categoryId, ArticleStatusEnum status, Pageable pageable);
-
-    Page<ArticleEntity> findAllByRegion_IdAndStatusAndVisibleTrueOrderByCreatedDateDesc(
-            Integer regionId, ArticleStatusEnum status, Pageable pageable);
-
-    Page<ArticleEntity> findAllByStatusAndVisibleTrueOrderByCreatedDateDesc(
-            ArticleStatusEnum status, Pageable pageable);
-
-    List<ArticleEntity> findTop4BySections_SectionIdAndIdNotAndStatusAndVisibleTrueOrderByCreatedDateDesc(
-            Integer sectionId, Integer excludeId, ArticleStatusEnum status);
-
-    List<ArticleEntity> findTop4ByStatusAndIdNotOrderByViewCountDesc(
-            ArticleStatusEnum status, Integer excludeId);
-
     // ====================== FIND LAST N BY SECTION ======================
     List<ArticleEntity> findAllBySections_SectionIdAndStatusAndVisibleTrue(
             Integer sectionId,
@@ -53,7 +35,7 @@ public interface ArticleRepository extends JpaRepository<ArticleEntity, Integer>
     );
 
     // ====================== FIND LAST N BY REGION ======================
-    List<ArticleEntity> findAllByRegion_RegionIdAndStatusAndVisibleTrue(
+    List<ArticleEntity> findAllByRegion_IdAndStatusAndVisibleTrue(
             Integer regionId,
             ArticleStatusEnum status,
             Pageable pageable

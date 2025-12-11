@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "region")
 public class RegionEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -40,7 +39,7 @@ public class RegionEntity {
     @Column(name = "name_kr")
     private String nameKr;
 
-    @Column(name = "region_key", nullable = false, unique = true)
+    @Column(name = "region_key", unique = true)
     private String regionKey;
 
     @Column(name = "visible")

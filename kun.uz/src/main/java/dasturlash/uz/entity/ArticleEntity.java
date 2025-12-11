@@ -38,7 +38,7 @@ public class ArticleEntity {
     private AttachEntity image;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "region_id")
+    @JoinColumn(name = "region_id", nullable = false)
     private RegionEntity region;
 
     @ManyToOne(fetch = FetchType.LAZY)

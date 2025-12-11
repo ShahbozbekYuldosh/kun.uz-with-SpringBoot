@@ -265,7 +265,7 @@ public class ArticleService {
 
     public List<ArticleFullInfoDTO> getLastNByRegion(Integer regionId, int size) {
         Pageable pageable = PageRequest.of(0, size, Sort.by("createdDate").descending());
-        List<ArticleEntity> articles = articleRepository.findAllByRegion_RegionIdAndStatusAndVisibleTrue(regionId, ArticleStatusEnum.PUBLISHED, pageable);
+        List<ArticleEntity> articles = articleRepository.findAllByRegion_IdAndStatusAndVisibleTrue(regionId, ArticleStatusEnum.PUBLISHED, pageable);
         return articles.stream().map(a -> toFullInfoDTO(a, "UZ")).collect(Collectors.toList());
     }
 
