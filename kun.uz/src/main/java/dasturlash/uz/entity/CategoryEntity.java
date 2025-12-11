@@ -1,11 +1,15 @@
 package dasturlash.uz.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "category")
 public class CategoryEntity {
     @Id
@@ -20,6 +24,8 @@ public class CategoryEntity {
     private String nameRu;
     @Column(name = "name_en")
     private String nameEn;
+    @Column(name = "name_kr")
+    private String nameKr;
     @Column(name = "category_keys", unique = true, nullable = false)
     private String categoryKey;
     @Column(name = "visible")
