@@ -19,8 +19,5 @@ public class RegionDTO {
     private String nameEn;
     private String nameKr;
     private String regionKey;
-
-
     private LocalDateTime createdDate;
-    private String name;
 }
