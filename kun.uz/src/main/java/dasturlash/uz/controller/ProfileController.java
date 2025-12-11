@@ -24,16 +24,19 @@ public class ProfileController {
     private final ProfileService profileService;
 
     private Integer getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
-            return userDetails.getProfileEntity().getId();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getProfile().getId();
         }
-        throw new RuntimeException("Autentifikatsiya ma'lumotlari topilmadi.");
+
+        throw new RuntimeException("User not authenticated");
     }
+
 
     // 1. Create profile (ADMIN)
     @PostMapping("/admin")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProfileDTO> create(@Valid @RequestBody ProfileCreateDTO dto) {
         Integer adminId = getCurrentUserId();
         ProfileDTO response = profileService.create(dto, adminId);
@@ -58,7 +61,7 @@ public class ProfileController {
 
     // 4. Update Profile Detail (ANY) - Foydalanuvchi o'zini o'zgartiradi
     @PutMapping("/detail")
-    @PreAuthorize("isAuthenticated()") // Barcha kirgan foydalanuvchilar
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProfileDTO> updateDetail(@Valid @RequestBody ProfileDetailUpdateDTO dto) {
         Integer currentUserId = getCurrentUserId();
         ProfileDTO response = profileService.updateDetail(currentUserId, dto);
@@ -83,7 +86,7 @@ public class ProfileController {
     }
 
     // 7. Update Photo (ANY)
-    @PutMapping("/photo") // URI ni tozalaymiz
+    @PutMapping("/photo")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> updatePhoto(@Valid @RequestBody PhotoUpdateDTO dto) {
         Integer currentUserId = getCurrentUserId();

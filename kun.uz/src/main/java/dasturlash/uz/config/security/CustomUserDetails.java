@@ -1,51 +1,48 @@
 package dasturlash.uz.config.security;
 
 import dasturlash.uz.entity.ProfileEntity;
-import dasturlash.uz.entity.ProfileRoleEntity;
-import dasturlash.uz.enums.ProfileRole;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
-    @Getter
-    private final ProfileEntity profileEntity;
+    private final ProfileEntity profile;
 
+    public CustomUserDetails(ProfileEntity profile) {
+        this.profile = profile;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 
-        if (profileEntity.getProfileRoles() == null || profileEntity.getProfileRoles().isEmpty()) {
-            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        if (profile.getProfileRoles() == null || profile.getProfileRoles().isEmpty()) {
+            return java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"));
         }
 
-        return profileEntity.getProfileRoles().stream()
-                .map(pr -> new SimpleGrantedAuthority(pr.getRole().name()))
+        return profile.getProfileRoles()
+                .stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().name()))
                 .collect(Collectors.toList());
     }
 
     @Override
     public String getPassword() {
-        return profileEntity.getPassword();
+        return profile.getPassword();
     }
 
     @Override
     public String getUsername() {
-        // E-mail yoki username hisoblanadi
-        return profileEntity.getUsername();
+        return profile.getUsername();
     }
 
-    // Account holati tekshiruvlari
+    public ProfileEntity getProfile() {
+        return profile;
+    }
+
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -63,7 +60,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        // Faqat ACTIVE profillar ishlashi uchun Status ni tekshirish
-        return profileEntity.getStatus().name().equals("ACTIVE");
+        return profile.getStatus().name().equals("ACTIVE");
     }
 }

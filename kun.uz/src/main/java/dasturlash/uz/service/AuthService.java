@@ -126,44 +126,30 @@ public class AuthService {
         return resultMessage;
     }
 
-    @Transactional
     public String verifyEmail(String token) {
-        try {
-            Claims claims = jwtUtil.extractClaims(token);
+        Claims claims = jwtUtil.getAllClaims(token);
 
-            String tokenType = claims.get("type", String.class);
-            if (!"EMAIL_VERIFICATION".equals(tokenType)) {
-                throw new AppBadException("Invalid token type");
-            }
+        String type = claims.get("type", String.class);
 
-            Integer profileId = claims.get("profileId", Integer.class);
-            String username = claims.getSubject();
-
-            ProfileEntity profileEntity = profileService.get(profileId);
-
-            if (!profileEntity.getUsername().equals(username)) {
-                throw new AppBadException("Invalid token");
-            }
-
-            if (profileEntity.getStatus().equals(ProfileStatus.ACTIVE)) {
-                return "Email already verified";
-            }
-
-            if (!profileEntity.getStatus().equals(ProfileStatus.REGISTRATION_PROGRESS)) {
-                throw new AppBadException("Invalid profile status");
-            }
-
-            profileEntity.setStatus(ProfileStatus.ACTIVE);
-            profileRepository.save(profileEntity);
-
-            return "Email verified successfully. You can now login.";
-
-        } catch (JwtException e) {
-            throw new AppBadException("Invalid or expired verification token");
-        } catch (Exception e) {
-            throw new AppBadException("Verification failed: " + e.getMessage());
+        if (!"verify".equals(type)) {
+            throw new RuntimeException("Invalid token type");
         }
+
+        Integer id = claims.get("id", Integer.class);
+
+        ProfileEntity entity = profileRepository.findById(id)
+                .orElseThrow(() -> new AppBadException("User not found"));
+
+        if (entity.getStatus().equals(ProfileStatus.ACTIVE)) {
+            return "Email already verified";
+        }
+
+        entity.setStatus(ProfileStatus.ACTIVE);
+        profileRepository.save(entity);
+
+        return "Email successfully verified";
     }
+
 
     @Transactional
     public String verifySms(SmsVerificationDTO dto) {
@@ -244,6 +230,7 @@ public class AuthService {
             throw new AppBadException("Invalid profile status");
         }
 
+        // Yangi token
         String verificationToken = jwtUtil.generateEmailVerificationToken(
                 profileEntity.getId(),
                 profileEntity.getUsername()
@@ -261,6 +248,7 @@ public class AuthService {
 
         return "New verification link sent to your email";
     }
+
 
     @Transactional
     public String resendVerificationSms(ResendSmsDTO phone) {
@@ -315,7 +303,7 @@ public class AuthService {
                 .orElseThrow(() -> new AppBadException("Profil role'lari topilmadi"));
 
 
-        String authToken = jwtUtil.generateAccessToken(profileEntity.getId(), profileEntity.getUsername(), role);
+        String authToken = jwtUtil.generateAccessToken(profileEntity.getId(), profileEntity.getUsername(), role.name());
 
         LoginResponseDTO responseDTO = new LoginResponseDTO();
         responseDTO.setName(profileEntity.getName());
