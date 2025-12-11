@@ -43,6 +43,8 @@ public class RegionService {
             case EN:
                 dto.setName(entity.getNameEn());
                 break;
+            case KRILL:
+                dto.setNameKr(entity.getNameKr());
         }
         return dto;
     }
@@ -57,6 +59,7 @@ public class RegionService {
         entity.setNameUz(dto.getNameUz());
         entity.setNameRu(dto.getNameRu());
         entity.setNameEn(dto.getNameEn());
+        entity.setNameKr(dto.getNameKr());
         entity.setRegionKey(dto.getRegionKey());
         // save
         regionRepository.save(entity);
@@ -66,16 +69,18 @@ public class RegionService {
         return dto;
     }
 
-    public RegionDTO update(Integer id, RegionDTO newDto) {// Jahon
+    public RegionDTO update(Integer id, RegionDTO newDto) {
+
         Optional<RegionEntity> optional = regionRepository.findByIdAndVisibleIsTrue(id);
         if (optional.isEmpty()) {
             throw new AppBadException("Region not found");
         }
-        Optional<RegionEntity> keyOptional = regionRepository.findByRegionKey(newDto.getRegionKey()); // Jahon
+
+        Optional<RegionEntity> keyOptional = regionRepository.findByRegionKey(newDto.getRegionKey());
         if (keyOptional.isPresent() && !id.equals(keyOptional.get().getId())) {
             throw new AppBadException("Region present");
         }
-        // 1-Jahon,2-Iksodiyot,3-Sport
+
         RegionEntity entity = optional.get();
         entity.setOrderNumber(newDto.getOrderNumber());
         entity.setNameUz(newDto.getNameUz());
@@ -84,7 +89,7 @@ public class RegionService {
         entity.setRegionKey(newDto.getRegionKey());
         regionRepository.save(entity);
 
-        return newDto;
+        return toDto(entity);
     }
 
     public Boolean delete(Integer id) {
@@ -107,7 +112,7 @@ public class RegionService {
         List<RegionDTO> dtos = new LinkedList<>();
         iterable.forEach(entity -> dtos.add(toLangResponseDto(entity, lang)));
 
-        return null;
+        return dtos;
     }
 
 }

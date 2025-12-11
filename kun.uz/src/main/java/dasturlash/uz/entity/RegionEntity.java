@@ -24,25 +24,23 @@ public class RegionEntity {
     @Column(name = "order_number")
     private Integer orderNumber;
 
-    @NotNull
     @NotBlank
-    @NotEmpty
     @Column(name = "name_uz")
     private String nameUz;
 
-    @NotNull
     @NotBlank
-    @NotEmpty
     @Column(name = "name_ru")
     private String nameRu;
 
-    @NotNull
     @NotBlank
-    @NotEmpty
     @Column(name = "name_en")
     private String nameEn;
 
-    @Column(name = "region_key")
+    @NotBlank
+    @Column(name = "name_kr")
+    private String nameKr;
+
+    @Column(name = "region_key", nullable = false, unique = true)
     private String regionKey;
 
     @Column(name = "visible")

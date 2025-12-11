@@ -6,6 +6,7 @@ import dasturlash.uz.service.AttachService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +32,7 @@ public class AttachController {
         return attachService.download(id);
     }
 
+    @PreAuthorize("hasRole(ADMIN)")
     @GetMapping("/adm/pagination")
     public PaginationResponseDTO<AttachDTO> pagination(@RequestParam int page,
                                                        @RequestParam int size) {
