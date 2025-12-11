@@ -30,6 +30,9 @@ public class SectionEntity {
     @Column(name = "name_en", nullable = false)
     private String nameEn;
 
+    @Column(name = "name_kr", nullable = false)
+    private String nameKr;
+
     @Column(name = "section_key", unique = true, nullable = false)
     private String sectionKey;
 
@@ -41,5 +44,5 @@ public class SectionEntity {
     private LocalDateTime createdDate;
 
     @Column(name = "image_id")
-    private Integer imageId; // Attach bilan bog'lanadi
+    private Integer imageId;
 }

@@ -11,11 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.*;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.*;
@@ -37,27 +38,21 @@ public class AttachService {
 
     // --------------------------- UPLOAD ---------------------------
     public AttachDTO upload(MultipartFile file) {
-
-        if (file.isEmpty()) {
-            throw new AppBadException("File not found");
-        }
+        if (file.isEmpty()) throw new AppBadException("File not found");
 
         try {
             String id = UUID.randomUUID().toString();
             String dateFolder = getFolderPath();
             String ext = getExtension(Objects.requireNonNull(file.getOriginalFilename()));
 
-            File folder = new File(folderName + "/" + dateFolder);
-            if (!folder.exists()) {
-                folder.mkdirs();
-            }
+            Path folderPath = Paths.get(folderName, dateFolder);
+            Files.createDirectories(folderPath);
 
             String fileName = id + "." + ext;
-            Path path = Paths.get(folderName + "/" + dateFolder + "/" + fileName);
+            Path path = folderPath.resolve(fileName);
 
             Files.write(path, file.getBytes());
 
-            // Save DB
             AttachEntity entity = new AttachEntity();
             entity.setId(id);
             entity.setFileName(fileName);
@@ -72,7 +67,7 @@ public class AttachService {
             return toDTO(saved);
 
         } catch (IOException e) {
-            throw new AppBadException("Error while uploading file");
+            throw new AppBadException("Error while uploading file: " + e.getMessage());
         }
     }
 
@@ -84,21 +79,17 @@ public class AttachService {
 
         try {
             Resource resource = new UrlResource(filePath.toUri());
-            if (!resource.exists()) {
-                throw new AppBadException("File not found");
-            }
+            if (!resource.exists()) throw new AppBadException("File not found");
 
             String contentType = Files.probeContentType(filePath);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
-            }
+            if (contentType == null) contentType = "application/octet-stream";
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(resource);
 
         } catch (IOException e) {
-            throw new AppBadException("File open error");
+            throw new AppBadException("File open error: " + e.getMessage());
         }
     }
 
@@ -117,27 +108,23 @@ public class AttachService {
                     .body(resource);
 
         } catch (MalformedURLException e) {
-            throw new AppBadException("Download error");
+            throw new AppBadException("Download error: " + e.getMessage());
         }
     }
 
     // --------------------------- PAGINATION ---------------------------
     public PaginationResponseDTO<AttachDTO> pagination(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<AttachEntity> result = attachRepository.findAll(pageable);
 
         return new PaginationResponseDTO<>(
-                result.getContent()
-                        .stream()
-                        .map(this::toDTO)
-                        .collect(Collectors.toList()),
+                result.getContent().stream().map(this::toDTO).collect(Collectors.toList()),
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.getSize(),
                 result.getNumber()
         );
     }
-
 
     // --------------------------- DELETE ---------------------------
     @Transactional
@@ -147,22 +134,20 @@ public class AttachService {
         try {
             Files.deleteIfExists(Paths.get(getFullPath(entity)));
             attachRepository.delete(entity);
-
             return "Deleted";
 
         } catch (IOException e) {
-            throw new AppBadException("Delete error");
+            throw new AppBadException("Delete error: " + e.getMessage());
         }
     }
 
     // --------------------------- HELPERS ---------------------------
     private AttachEntity get(String id) {
-        return attachRepository.findById(id)
-                .orElseThrow(() -> new AppBadException("Attach not found"));
+        return attachRepository.findById(id).orElseThrow(() -> new AppBadException("Attach not found"));
     }
 
     private String getFullPath(AttachEntity entity) {
-        return folderName + "/" + entity.getPath() + "/" + entity.getFileName();
+        return Paths.get(folderName, entity.getPath(), entity.getFileName()).toString();
     }
 
     private String getFolderPath() {
