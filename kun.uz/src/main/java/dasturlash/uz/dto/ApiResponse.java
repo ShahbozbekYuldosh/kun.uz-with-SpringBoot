@@ -28,6 +28,15 @@ public class ApiResponse<T> {
         return new ApiResponse<>(success, message, data);
     }
 
+    public static <T> ApiResponse<T> successMessage(String message) {
+        ApiResponse<T> response = new ApiResponse<>();
+        response.setSuccess(true);
+        response.setMessage(message);
+        response.setData(null);
+        return response;
+    }
+
+
     // ====================== ERROR ======================
     public static <T> ApiResponse<T> fail(String message) {
         return new ApiResponse<>(false, message, null);

@@ -28,8 +28,11 @@ public class CommentService {
     private final JwtUtil jwtUtil;
 
     private Integer getCurrentUserId() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return jwtUtil.getAllClaims(username).get("id", Integer.class);
+        Object details = SecurityContextHolder.getContext().getAuthentication().getDetails();
+        if (details instanceof Integer id) {
+            return id;
+        }
+        throw new AppBadException("User not authenticated");
     }
 
     // CREATE COMMENT

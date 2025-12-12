@@ -25,7 +25,7 @@ public class CommentLikeService {
     private Integer getCurrentUserId() {
         String username = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String token = SecurityContextHolder.getContext().getAuthentication().getCredentials().toString();
-        return jwtUtil.extractClaims(token).get("id", Integer.class);
+        return jwtUtil.extractClaim(token, claims -> claims.get("id", Integer.class));
     }
 
     // Comment Like
@@ -35,7 +35,6 @@ public class CommentLikeService {
         CommentEntity comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new AppBadException("Comment not found"));
 
-        // Avvalgi Like/Dislike mavjud bo'lsa o'chirish
         commentLikeRepository.findByProfileIdAndCommentId(profileId, commentId)
                 .ifPresent(commentLikeRepository::delete);
 

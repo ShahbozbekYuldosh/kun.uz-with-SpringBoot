@@ -35,13 +35,13 @@ public class RegionService {
         dto.setRegionKey(entity.getRegionKey());
         switch (lang) {
             case UZ:
-                dto.setName(entity.getNameUz());
+                dto.setNameUz(entity.getNameUz());
                 break;
             case RU:
-                dto.setName(entity.getNameRu());
+                dto.setNameRu(entity.getNameRu());
                 break;
             case EN:
-                dto.setName(entity.getNameEn());
+                dto.setNameEn(entity.getNameEn());
                 break;
             case KRILL:
                 dto.setNameKr(entity.getNameKr());

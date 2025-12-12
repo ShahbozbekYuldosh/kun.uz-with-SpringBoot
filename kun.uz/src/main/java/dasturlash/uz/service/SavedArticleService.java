@@ -25,7 +25,7 @@ public class SavedArticleService {
     private Integer getCurrentUserId() {
         String username = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String token = SecurityContextHolder.getContext().getAuthentication().getCredentials().toString();
-        return jwtUtil.extractClaims(token).get("id", Integer.class);
+        return jwtUtil.extractClaim(token, claims -> claims.get("id", Integer.class));
     }
 
     public ApiResponse create(Integer articleId) {

@@ -68,7 +68,6 @@ public class ArticleEntity {
     @Column(name = "view_count")
     private Integer viewCount = 0;
 
-    // Category bilan bog'lanish (ManyToMany)
     @ManyToMany
     @JoinTable(
             name = "article_category",

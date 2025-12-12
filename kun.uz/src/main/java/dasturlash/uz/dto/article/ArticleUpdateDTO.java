@@ -10,7 +10,7 @@ public class ArticleUpdateDTO {
     private String title;
     private String description;
     private String content;
-    private Integer imageId;
+    private String imageId;
     private Integer regionId;
     private List<Integer> categoryList;
     private List<Integer> sectionList;

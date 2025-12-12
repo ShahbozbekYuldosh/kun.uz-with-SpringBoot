@@ -127,7 +127,7 @@ public class AuthService {
     }
 
     public String verifyEmail(String token) {
-        Claims claims = jwtUtil.getAllClaims(token);
+        Claims claims = jwtUtil.extractAllClaims(token);
 
         String type = claims.get("type", String.class);
 

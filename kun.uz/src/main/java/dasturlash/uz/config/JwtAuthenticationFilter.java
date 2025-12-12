@@ -1,6 +1,9 @@
 package dasturlash.uz.config;
 
+import dasturlash.uz.entity.ProfileEntity;
+import dasturlash.uz.repository.ProfileRepository;
 import dasturlash.uz.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -26,11 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private ProfileRepository profileRepository;
+
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
         AntPathMatcher pathMatcher = new AntPathMatcher();
-        return Arrays
-                .stream(SecurityConfig.AUTH_WHITELIST)
+        return Arrays.stream(SecurityConfig.AUTH_WHITELIST)
                 .anyMatch(p -> pathMatcher.match(p, request.getServletPath()));
     }
 
@@ -41,30 +46,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-
         String username = null;
         String token = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            username = jwtUtil.extractUsername(token);
-        }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                username = jwtUtil.extractUsername(token);
+                String role = jwtUtil.extractRole(token);
+                Integer id = jwtUtil.extractUserId(token);
 
-            String role = jwtUtil.extractRole(token);
+                // DB dan profilni o‘qiymiz
+                Optional<ProfileEntity> profileOpt = profileRepository.findByUsernameAndVisibleTrue(username);
+                if (profileOpt.isPresent()) {
+                    ProfileEntity profile = profileOpt.get();
 
-            List<GrantedAuthority> authorities =
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                    // Request attribute ga qo‘shamiz
+                    request.setAttribute("profile", profile);
+                    logger.info("Profile set in request: " + profile.getUsername());
 
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    // Authentication-ga qo‘shamiz
+                    List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(profile, null, authorities);
+                    authToken.setDetails(id);
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                } else {
+                    logger.warn("Profile not found for username: " + username);
+                }
 
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+            } catch (Exception e) {
+                logger.warn("JWT noto‘g‘ri: " + e.getMessage());
+            }
         }
 
         chain.doFilter(request, response);
     }
+
 }

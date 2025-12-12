@@ -22,17 +22,14 @@ public class AdminInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         if (!profileRoleService.existsByRole(ProfileRole.ROLE_ADMIN)) {
 
-            ProfileEntity admin = new ProfileEntity();
-            admin.setName("Super Admin");
-            admin.setUsername("superadmin@dasturlash.uz");
-            admin.setPassword(passwordEncoder.encode("superadmin123"));
-            admin.setStatus(ProfileStatus.ACTIVE);
-            admin.setVisible(true);
-
-            profileRepository.save(admin);
-
+            if (!profileRepository.existsByUsername("superadmin@dasturlash.uz")) {
+                ProfileEntity admin = new ProfileEntity();
+                admin.setUsername("superadmin@dasturlash.uz");
+                admin.setPassword(passwordEncoder.encode("1234"));
+                admin.setName("Super Admin");
+                profileRepository.save(admin);
             profileRoleService.create(admin, ProfileRole.ROLE_ADMIN);
-
+            }
             System.out.println(">>> BIRINCHI SUPER ADMIN MUVAFFFAQIYATLI YARATILDI! <<<");
         }
     }
