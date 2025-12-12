@@ -4,6 +4,8 @@ import dasturlash.uz.enums.SmsStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +28,7 @@ public class SmsHistoryEntity {
     @Column
     private SmsStatus status;
 
+    @CreationTimestamp
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate = LocalDateTime.now();
 
