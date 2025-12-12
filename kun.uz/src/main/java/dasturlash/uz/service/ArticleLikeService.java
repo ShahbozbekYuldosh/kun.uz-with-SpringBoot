@@ -45,7 +45,7 @@ public class ArticleLikeService {
 
         articleLikeRepository.save(entity);
 
-        return new ApiResponse(true, "Liked");
+        return ApiResponse.<String>success("Liked", null);
     }
 
     public ApiResponse dislike(Integer articleId) {
@@ -64,7 +64,7 @@ public class ArticleLikeService {
         entity.setCreatedDate(LocalDateTime.now());
         articleLikeRepository.save(entity);
 
-        return new ApiResponse(true, "Disliked");
+        return ApiResponse.<String>success("Disliked", null);
     }
 
     public ApiResponse remove(Integer articleId) {
@@ -75,6 +75,6 @@ public class ArticleLikeService {
                 .orElseThrow(() -> new AppBadException("Like/Dislike not found"));
         articleLikeRepository.delete(likeEntity);
 
-        return new ApiResponse(true, "Removed");
+        return ApiResponse.<String>success("Removed", null);
     }
 }

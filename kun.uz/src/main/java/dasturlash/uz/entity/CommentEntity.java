@@ -3,6 +3,8 @@ package dasturlash.uz.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,7 +19,9 @@ public class CommentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @CreationTimestamp
     private LocalDateTime createdDate;
+    @UpdateTimestamp
     private LocalDateTime updateDate;
 
     @Column(name = "profile_id", insertable = false, updatable = false)
@@ -38,7 +42,7 @@ public class CommentEntity {
     private ArticleEntity article;
 
     @Column(name = "reply_id")
-    private Integer replyId; // self-referential
+    private Integer replyId;
 
     @OneToMany(mappedBy = "replyId", fetch = FetchType.LAZY)
     private List<CommentEntity> replies;

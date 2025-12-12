@@ -1,19 +1,31 @@
 package dasturlash.uz.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-public class ApiResponse {
+@AllArgsConstructor
+public class ApiResponse<T> {
+
     private boolean success;
     private String message;
-    private Object data;
+    private T data;
 
-    public ApiResponse(boolean success, String message) {
-        this.success = success;
-        this.message = message;
+    // ====================== SUCCESS ======================
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(true, "Success", data);
+    }
+
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return new ApiResponse<>(true, message, data);
+    }
+
+    // ====================== ERROR ======================
+    public static <T> ApiResponse<T> fail(String message) {
+        return new ApiResponse<>(false, message, null);
     }
 }
