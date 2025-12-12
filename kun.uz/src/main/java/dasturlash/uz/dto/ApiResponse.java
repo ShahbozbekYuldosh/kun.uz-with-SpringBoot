@@ -24,6 +24,10 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, message, data);
     }
 
+    public static <T> ApiResponse<T> of(Boolean success, String message, T data) {
+        return new ApiResponse<>(success, message, data);
+    }
+
     // ====================== ERROR ======================
     public static <T> ApiResponse<T> fail(String message) {
         return new ApiResponse<>(false, message, null);
