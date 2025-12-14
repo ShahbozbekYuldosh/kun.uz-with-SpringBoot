@@ -10,14 +10,14 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<CommentEntity, Integer>, JpaSpecificationExecutor<CommentEntity> {
 
-    List<CommentEntity> findAllByReplyIdAndVisibleTrueOrderByCreatedDateAsc(Integer replyId);
+    // parent orqali replies olish
+    List<CommentEntity> findAllByParentIdAndVisibleTrueOrderByCreatedDateAsc(Integer parentId);
 
     List<CommentEntity> findAllByArticle_IdAndVisibleTrueOrderByCreatedDateDesc(Integer articleId);
 
     Page<CommentEntity> findAllByVisibleTrue(Pageable pageable);
 
-    List<CommentEntity> findByReplyId(Integer replyId);
+    List<CommentEntity> findByParentId(Integer parentId);
 
     List<CommentEntity> findByArticleIdAndVisibleTrueOrderByCreatedDateDesc(Integer articleId);
-
 }

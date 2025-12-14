@@ -39,7 +39,6 @@ public class ArticleService {
         entity.setStatus(ArticleStatusEnum.NOT_PUBLISHED);
         entity.setVisible(true);
 
-        // imageId String tipida bo'lishi kerak (UUID)
         if (dto.getImageId() != null && !dto.getImageId().isEmpty()) {
             entity.setImage(attachRepository.findById(dto.getImageId())
                     .orElseThrow(() -> new AppBadException("Image not found")));
@@ -164,10 +163,7 @@ public class ArticleService {
                         .collect(Collectors.toList()) :
                 new ArrayList<>());
 
-        // Image URL bilan ishlash, ID endi UUID String
-        Optional.ofNullable(entity.getImage()).ifPresent(img -> {
-            dto.setImageUrl("/api/v1/attach/open/" + img.getId());
-        });
+        Optional.ofNullable(entity.getImage()).ifPresent(img -> dto.setImageUrl("/api/v1/attach/open/" + img.getId()));
 
         return dto;
     }

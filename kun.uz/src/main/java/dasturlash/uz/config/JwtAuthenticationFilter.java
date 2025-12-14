@@ -57,7 +57,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = jwtUtil.extractRole(token);
                 Integer id = jwtUtil.extractUserId(token);
 
-                // DB dan profilni o‘qiymiz
                 Optional<ProfileEntity> profileOpt = profileRepository.findByUsernameAndVisibleTrue(username);
                 if (profileOpt.isPresent()) {
                     ProfileEntity profile = profileOpt.get();

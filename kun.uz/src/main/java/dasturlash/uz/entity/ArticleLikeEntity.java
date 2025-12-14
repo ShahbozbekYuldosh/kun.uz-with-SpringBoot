@@ -4,6 +4,7 @@ import dasturlash.uz.enums.Emotion;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -34,5 +35,6 @@ public class ArticleLikeEntity {
     @Enumerated(EnumType.STRING)
     private Emotion emotion;
 
+    @CreationTimestamp
     private LocalDateTime createdDate;
 }

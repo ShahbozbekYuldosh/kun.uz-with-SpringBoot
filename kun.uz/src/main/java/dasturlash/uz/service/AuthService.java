@@ -1,6 +1,5 @@
 package dasturlash.uz.service;
 
-import ch.qos.logback.core.testUtil.RandomUtil;
 import dasturlash.uz.dto.*;
 import dasturlash.uz.dto.profile.ResendSmsDTO;
 import dasturlash.uz.dto.sms.SmsVerificationDTO;
@@ -13,7 +12,6 @@ import dasturlash.uz.exps.AppBadException;
 import dasturlash.uz.repository.ProfileRepository;
 import dasturlash.uz.util.JwtUtil;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -78,7 +76,6 @@ public class AuthService {
                 throw new AppBadException("User already exists");
             }
         } else {
-            // Yangi profil yaratish (avvalgi mantiq)
             entity = new ProfileEntity();
             entity.setName(dto.getName());
             entity.setUsername(dto.getUsername());
@@ -285,7 +282,7 @@ public class AuthService {
 
     public LoginResponseDTO login(LoginDTO loginDTO) {
         ProfileEntity profileEntity = profileRepository.findByUsernameAndVisibleTrue(loginDTO.getUsername())
-                .orElseThrow(() -> new AppBadException("Login yoki parol noto'g'ri"));
+                .orElseThrow(() -> new AppBadException("Avval ro'yxatdan o'tilmagan"));
 
         boolean matches = passwordEncoder.matches(loginDTO.getPassword(), profileEntity.getPassword());
         if (!matches) {
@@ -313,7 +310,5 @@ public class AuthService {
 
         return responseDTO;
     }
-
-
 }
 

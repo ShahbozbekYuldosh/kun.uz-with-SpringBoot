@@ -41,10 +41,11 @@ public class CommentEntity {
     @JoinColumn(name = "article_id")
     private ArticleEntity article;
 
-    @Column(name = "reply_id")
-    private Integer replyId;
+    @ManyToOne
+    @JoinColumn(name = "reply_id")
+    private CommentEntity parent;
 
-    @OneToMany(mappedBy = "replyId", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parent")
     private List<CommentEntity> replies;
 
     private Boolean visible = Boolean.TRUE;

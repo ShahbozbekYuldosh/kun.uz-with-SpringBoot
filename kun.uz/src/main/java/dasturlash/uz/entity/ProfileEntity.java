@@ -24,14 +24,13 @@ public class ProfileEntity {
     private String name;
 
     @Column(unique = true)
-    private String username; // email yoki phone
+    private String username;
 
     private String password;
 
     @Enumerated(EnumType.STRING)
     private ProfileStatus status = ProfileStatus.ACTIVE;
 
-    @Column(name = "role")
     @Enumerated(EnumType.STRING)
     @OneToMany(mappedBy = "profile", fetch = FetchType.EAGER)
     private List<ProfileRoleEntity> profileRoles;

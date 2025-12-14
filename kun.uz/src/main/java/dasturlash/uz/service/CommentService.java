@@ -40,10 +40,14 @@ public class CommentService {
         CommentEntity entity = new CommentEntity();
         entity.setContent(dto.getContent());
         entity.setArticleId(dto.getArticleId());
-        entity.setReplyId(dto.getReplyId());
         entity.setProfileId(getCurrentUserId());
         entity.setCreatedDate(LocalDateTime.now());
 
+        if (dto.getReplyId() != null) {
+            CommentEntity parentComment = commentRepository.findById(dto.getReplyId())
+                    .orElseThrow(() -> new AppBadException("Parent comment not found"));
+            entity.setParent(parentComment);
+        }
         commentRepository.save(entity);
         return toDTO(entity);
     }
@@ -87,7 +91,7 @@ public class CommentService {
 
     // REPLIED COMMENTS
     public java.util.List<CommentResponseDTO> getReplies(Integer commentId) {
-        return commentRepository.findByReplyId(commentId)
+        return commentRepository.findByParentId(commentId)
                 .stream().map(this::toDTO)
                 .collect(Collectors.toList());
     }
