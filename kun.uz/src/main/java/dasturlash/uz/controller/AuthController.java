@@ -1,6 +1,9 @@
 package dasturlash.uz.controller;
 
-import dasturlash.uz.dto.*;
+import dasturlash.uz.dto.LoginDTO;
+import dasturlash.uz.dto.LoginResponseDTO;
+import dasturlash.uz.dto.RegistrationDTO;
+import dasturlash.uz.dto.VerificationDTO;
 import dasturlash.uz.dto.profile.ResendSmsDTO;
 import dasturlash.uz.dto.sms.SmsVerificationDTO;
 import dasturlash.uz.service.AuthService;
