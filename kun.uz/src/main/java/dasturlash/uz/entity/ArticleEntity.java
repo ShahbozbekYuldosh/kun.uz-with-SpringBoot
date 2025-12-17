@@ -83,4 +83,13 @@ public class ArticleEntity {
             inverseJoinColumns = @JoinColumn(name = "section_id")
     )
     private Set<SectionEntity> sections = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "article_tag",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<TagEntity> tags = new HashSet<>();
+
 }

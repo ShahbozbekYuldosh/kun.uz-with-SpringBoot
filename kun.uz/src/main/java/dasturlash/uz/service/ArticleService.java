@@ -29,7 +29,7 @@ public class ArticleService {
 
     // --------------------------- CREATE ---------------------------
     @Transactional
-    public ArticleInfoDTO createArticle(ArticleCreateDTO dto, ProfileEntity moderator) {
+    public ArticleFullInfoDTO createArticle(ArticleCreateDTO dto, ProfileEntity moderator) {
 
         ArticleEntity entity = new ArticleEntity();
         entity.setTitle(dto.getTitle());
@@ -58,12 +58,12 @@ public class ArticleService {
                 new HashSet<>());
 
         ArticleEntity saved = articleRepository.save(entity);
-        return toArticleInfoDTO(saved, AppLanguageEnum.UZ);
+        return toFullInfoDTO(saved, AppLanguageEnum.UZ);
     }
 
     // --------------------------- UPDATE ---------------------------
     @Transactional
-    public ArticleInfoDTO updateArticle(Integer id, ArticleUpdateDTO dto, ProfileEntity moderator) {
+    public ArticleFullInfoDTO updateArticle(Integer id, ArticleUpdateDTO dto, ProfileEntity moderator) {
 
         ArticleEntity entity = articleRepository.findById(id)
                 .orElseThrow(() -> new AppBadException("Article not found"));
@@ -93,7 +93,7 @@ public class ArticleService {
                 new HashSet<>());
 
         ArticleEntity saved = articleRepository.save(entity);
-        return toArticleInfoDTO(saved, AppLanguageEnum.UZ);
+        return toFullInfoDTO(saved, AppLanguageEnum.UZ);
     }
 
     // --------------------------- DELETE ---------------------------
@@ -106,67 +106,47 @@ public class ArticleService {
         return "Article deleted";
     }
 
-    // --------------------------- CHANGE STATUS ---------------------------
+    // --------------------------- CHANGE ARTICLE STATUS ---------------------------
     @Transactional
-    public String changeStatus(Integer id, ArticleStatusEnum status, ProfileEntity publisher) {
-        ArticleEntity entity = articleRepository.findById(id)
+    public ArticleFullInfoDTO publishArticle(
+            Integer articleId,
+            ProfileEntity publisher,
+            AppLanguageEnum lang
+    ) {
+
+        ArticleEntity entity = articleRepository.findByIdAndVisibleTrue(articleId)
                 .orElseThrow(() -> new AppBadException("Article not found"));
-        entity.setStatus(status);
-        entity.setPublisher(publisher);
-        if (status == ArticleStatusEnum.PUBLISHED) {
-            entity.setPublishedDate(LocalDateTime.now());
+
+        if (entity.getStatus() == ArticleStatusEnum.PUBLISHED) {
+            throw new AppBadException("Article already published");
         }
+
+        entity.setStatus(ArticleStatusEnum.PUBLISHED);
+        entity.setPublisher(publisher);
+        entity.setPublishedDate(LocalDateTime.now());
+
         articleRepository.save(entity);
-        return "Status changed to " + status;
+
+        return toFullInfoDTO(entity, lang);
+    }
+
+
+    @Transactional
+    public void editArticle(Integer articleId, ArticleEditDTO dto) {
+
+        ArticleEntity entity = articleRepository.findByIdAndVisibleTrue(articleId)
+                .orElseThrow(() -> new AppBadException("Article not found"));
+
+        entity.setTitle(dto.getTitle());
+        entity.setDescription(dto.getDescription());
+        entity.setContent(dto.getContent());
+        entity.setStatus(ArticleStatusEnum.NOT_PUBLISHED);
+        entity.setPublishedDate(LocalDateTime.now());
+
+        articleRepository.save(entity);
     }
 
     // --------------------------- DTO MAPPER ---------------------------
-    public ArticleInfoDTO toArticleInfoDTO(ArticleEntity entity, AppLanguageEnum lang) {
-        ArticleInfoDTO dto = new ArticleInfoDTO();
-        dto.setId(entity.getId());
-        dto.setTitle(entity.getTitle());
-        dto.setDescription(entity.getDescription());
-        dto.setContent(entity.getContent());
-        dto.setSharedCount(entity.getSharedCount());
-        dto.setViewCount(entity.getViewCount());
-        dto.setPublishedDate(entity.getPublishedDate());
-
-        if (entity.getRegion() != null) {
-            dto.setRegionKey(entity.getRegion().getRegionKey());
-            switch (lang) {
-                case UZ -> dto.setRegionName(entity.getRegion().getNameUz());
-                case RU -> dto.setRegionName(entity.getRegion().getNameRu());
-                case EN -> dto.setRegionName(entity.getRegion().getNameEn());
-                case KRILL -> dto.setRegionName(entity.getRegion().getNameKr());
-            }
-        }
-
-        dto.setCategoryNames(entity.getCategories() != null ?
-                entity.getCategories().stream()
-                        .map(cat -> switch (lang) {
-                            case UZ -> cat.getNameUz();
-                            case RU -> cat.getNameRu();
-                            case EN -> cat.getNameEn();
-                            case KRILL -> cat.getNameKr();
-                        })
-                        .collect(Collectors.toList()) :
-                new ArrayList<>());
-
-        dto.setSectionNames(entity.getSections() != null ?
-                entity.getSections().stream()
-                        .map(sec -> switch (lang) {
-                            case UZ -> sec.getNameUz();
-                            case RU -> sec.getNameRu();
-                            case EN -> sec.getNameEn();
-                            case KRILL -> sec.getNameKr();
-                        })
-                        .collect(Collectors.toList()) :
-                new ArrayList<>());
-
-        Optional.ofNullable(entity.getImage()).ifPresent(img -> dto.setImageUrl("/api/v1/attach/open/" + img.getId()));
-
-        return dto;
-    }
     // ====================== HELPERS ======================
 
     private ArticleShortInfoDTO toShortInfoDTO(ArticleEntity entity) {
@@ -181,8 +161,9 @@ public class ArticleService {
         return dto;
     }
 
-    private ArticleFullInfoDTO toFullInfoDTO(ArticleEntity entity, String lang) {
+    private ArticleFullInfoDTO toFullInfoDTO(ArticleEntity entity, AppLanguageEnum lang) {
         ArticleFullInfoDTO dto = new ArticleFullInfoDTO();
+
         dto.setId(entity.getId());
         dto.setTitle(entity.getTitle());
         dto.setDescription(entity.getDescription());
@@ -197,24 +178,32 @@ public class ArticleService {
         if (entity.getRegion() != null) {
             ArticleFullInfoDTO.RegionInfo region = new ArticleFullInfoDTO.RegionInfo();
             region.setKey(entity.getRegion().getRegionKey());
-            switch (lang.toUpperCase()) {
-                case "UZ" -> region.setName(entity.getRegion().getNameUz());
-                case "RU" -> region.setName(entity.getRegion().getNameRu());
-                case "EN" -> region.setName(entity.getRegion().getNameEn());
-                case "KR" -> region.setName(entity.getRegion().getNameKr());
+            switch (lang) {
+                case UZ -> region.setName(entity.getRegion().getNameUz());
+                case RU -> region.setName(entity.getRegion().getNameRu());
+                case EN -> region.setName(entity.getRegion().getNameEn());
+                case KRILL -> region.setName(entity.getRegion().getNameKr());
                 default -> region.setName(entity.getRegion().getNameUz());
             }
             dto.setRegion(region);
         }
 
+        if (entity.getModerator() != null) {
+            ArticleFullInfoDTO.ModeratorInfo m = new ArticleFullInfoDTO.ModeratorInfo();
+            m.setId(entity.getModerator().getId());
+            m.setName(entity.getModerator().getName());
+            m.setUsername(entity.getModerator().getUsername());
+            dto.setModerator(m);
+        }
+
         dto.setCategoryList(entity.getCategories().stream().map(cat -> {
             ArticleFullInfoDTO.CategoryInfo c = new ArticleFullInfoDTO.CategoryInfo();
             c.setKey(cat.getCategoryKey());
-            c.setName(switch (lang.toUpperCase()) {
-                case "UZ" -> cat.getNameUz();
-                case "RU" -> cat.getNameRu();
-                case "EN" -> cat.getNameEn();
-                case "KR" -> cat.getNameKr();
+            c.setName(switch (lang) {
+                case UZ -> cat.getNameUz();
+                case RU -> cat.getNameRu();
+                case EN -> cat.getNameEn();
+                case KRILL -> cat.getNameKr();
                 default -> cat.getNameUz();
             });
             return c;
@@ -223,17 +212,23 @@ public class ArticleService {
         dto.setSectionList(entity.getSections().stream().map(sec -> {
             ArticleFullInfoDTO.SectionInfo s = new ArticleFullInfoDTO.SectionInfo();
             s.setId(sec.getSectionId());
-            s.setName(switch (lang.toUpperCase()) {
-                case "UZ" -> sec.getNameUz();
-                case "RU" -> sec.getNameRu();
-                case "EN" -> sec.getNameEn();
+            s.setName(switch (lang) {
+                case UZ -> sec.getNameUz();
+                case RU -> sec.getNameRu();
+                case EN -> sec.getNameEn();
+                case KRILL -> sec.getNameKr();
                 default -> sec.getNameUz();
             });
             return s;
         }).collect(Collectors.toList()));
 
-        // Tag list bo'sh hozir, keyin qo'shish mumkin
-        dto.setTagList(new ArrayList<>());
+        // TAG
+        dto.setTagList(entity.getTags().stream().map(tag -> {
+            ArticleFullInfoDTO.TagInfo t = new ArticleFullInfoDTO.TagInfo();
+            t.setId(tag.getId());
+            t.setName(tag.getName());
+            return t;
+        }).toList());
 
         return dto;
     }
@@ -261,10 +256,10 @@ public class ArticleService {
     public List<ArticleFullInfoDTO> getLastNByRegion(Integer regionId, int size) {
         Pageable pageable = PageRequest.of(0, size, Sort.by("createdDate").descending());
         List<ArticleEntity> articles = articleRepository.findAllByRegion_IdAndStatusAndVisibleTrue(regionId, ArticleStatusEnum.PUBLISHED, pageable);
-        return articles.stream().map(a -> toFullInfoDTO(a, "UZ")).collect(Collectors.toList());
+        return articles.stream().map(a -> toFullInfoDTO(a, AppLanguageEnum.UZ)).collect(Collectors.toList());
     }
 
-    public ArticleFullInfoDTO getArticleByIdAndLang(Integer id, String lang) {
+    public ArticleFullInfoDTO getArticleByIdAndLang(Integer id, AppLanguageEnum lang) {
         ArticleEntity entity = articleRepository.findByIdAndVisibleTrue(id)
                 .orElseThrow(() -> new AppBadException("Article not found"));
         return toFullInfoDTO(entity, lang);

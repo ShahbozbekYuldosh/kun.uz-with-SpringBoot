@@ -2,11 +2,13 @@ package dasturlash.uz.controller;
 
 import dasturlash.uz.dto.article.*;
 import dasturlash.uz.entity.ProfileEntity;
+import dasturlash.uz.enums.AppLanguageEnum;
 import dasturlash.uz.enums.ArticleStatusEnum;
 import dasturlash.uz.service.ArticleService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +24,7 @@ public class ArticleController {
     @Operation(summary = "Maqola yaratish (Moderator)", description = "Moderator maqolani NOT_PUBLISHED statusda yaratadi")
     @PostMapping("/create")
     @PreAuthorize("hasRole('MODERATOR')")
-    public ArticleInfoDTO createArticle(@RequestBody ArticleCreateDTO dto,
+    public ArticleFullInfoDTO createArticle(@RequestBody ArticleCreateDTO dto,
                                         @RequestAttribute("profile") ProfileEntity moderator) {
         return articleService.createArticle(dto, moderator);
     }
@@ -31,7 +33,7 @@ public class ArticleController {
     @Operation(summary = "Maqola yangilash (Moderator)", description = "Moderator maqolani NOT_PUBLISHED statusga yangilaydi")
     @PutMapping("/update/{id}")
     @PreAuthorize("hasRole('MODERATOR')")
-    public ArticleInfoDTO updateArticle(@PathVariable Integer id,
+    public ArticleFullInfoDTO updateArticle(@PathVariable Integer id,
                                         @RequestBody ArticleUpdateDTO dto,
                                         @RequestAttribute("profile") ProfileEntity moderator) {
         return articleService.updateArticle(id, dto, moderator);
@@ -46,13 +48,15 @@ public class ArticleController {
     }
 
     // --------------------------- CHANGE STATUS ---------------------------
-    @Operation(summary = "Maqola statusini o'zgartirish (Publisher)")
-    @PostMapping("/change-status/{id}")
-    @PreAuthorize("hasRole('PUBLISHER')")
-    public String changeStatus(@PathVariable Integer id,
-                               @RequestParam ArticleStatusEnum status,
-                               @RequestAttribute("profile") ProfileEntity publisher) {
-        return articleService.changeStatus(id, status, publisher);
+    @Operation(summary = "Maqola statusini PUBLISHED qilish (Publisher/Admin)")
+    @PutMapping("/publish/{id}")
+    @PreAuthorize("hasAnyRole('PUBLISHER','ADMIN')")
+    public ArticleFullInfoDTO publishArticle(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "UZ") AppLanguageEnum lang,
+            @AuthenticationPrincipal ProfileEntity publisher
+    ) {
+        return articleService.publishArticle(id, publisher, lang);
     }
 
 
@@ -91,7 +95,7 @@ public class ArticleController {
     @Operation(summary = "Maqola by Id va Language")
     @GetMapping("/{id}")
     public ArticleFullInfoDTO getArticleById(@PathVariable Integer id,
-                                             @RequestParam(defaultValue = "UZ") String lang) {
+                                             @RequestParam(defaultValue = "UZ") AppLanguageEnum lang) {
         return articleService.getArticleByIdAndLang(id, lang);
     }
 
